@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 1140371450}
   m_Layer: 0
   m_Name: Chao
-  m_TagString: Untagged
+  m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -396,8 +396,8 @@ Transform:
   m_GameObject: {fileID: 1684136491}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.71, y: 2.19, z: 2.68}
-  m_LocalScale: {x: 1.0912588, y: 0.93129826, z: 1}
+  m_LocalPosition: {x: 0.7445, y: 2.1326, z: 2.68}
+  m_LocalScale: {x: 1.1602263, y: 1.0461273, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1945825967}
