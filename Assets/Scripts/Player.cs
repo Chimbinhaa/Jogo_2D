@@ -18,7 +18,7 @@ public class Player : MonoBehaviour
         rb.linearVelocity = new Vector2(moveHorizontal * speed, rb.linearVelocity.y);
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-            rb.AddForce(new Vector2(0f, 5f), ForceMode2D.Impulse);
+            rb.AddForce(new Vector2(0f, 6f), ForceMode2D.Impulse);
         }
     }
     void OnCollisionEnter2D(Collision2D collision)
