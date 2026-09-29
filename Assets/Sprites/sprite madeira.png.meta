@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      sprite madeira_0: -1108000441168310974
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
