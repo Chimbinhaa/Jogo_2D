@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: d639456c04c7aa4438b61b5ea62daa68
+guid: 77f22c9b3f0ba4b4b8838fb82632d817
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9025881597686614669
-    second: agenor_temporario-removebg-preview_0
+      213: -602324347073204013
+    second: image-removebg-preview (8)_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: agenor_temporario-removebg-preview_0
+      name: image-removebg-preview (8)_0
       rect:
         serializedVersion: 2
-        x: 50
-        y: 5
-        width: 89
-        height: 176
+        x: 34
+        y: 88
+        width: 137
+        height: 87
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 37577211280adb280800000000000000
-      internalID: -9025881597686614669
+      spriteID: 3d0f125923d14a7f0800000000000000
+      internalID: -602324347073204013
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: e4a31767892e9c04bbbd19bb153e19b4
     internalID: 0
     vertices: []
     indices: 
@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      image-removebg-preview (8)_0: -602324347073204013
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
