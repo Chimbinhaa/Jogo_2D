@@ -386,8 +386,9 @@ GameObject:
   - component: {fileID: 26627469}
   - component: {fileID: 26627468}
   - component: {fileID: 26627467}
+  - component: {fileID: 26627470}
   m_Layer: 0
-  m_Name: Chao9
+  m_Name: Plataforma1
   m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -484,7 +485,7 @@ SpriteRenderer:
   m_SortingLayer: 2
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.3584906, g: 0.16821143, b: 0.14001423, a: 1}
+  m_Color: {r: 0.4196079, g: 0.5568628, b: 0.1372549, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -503,12 +504,27 @@ Transform:
   m_GameObject: {fileID: 26627466}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.16976935, w: 0.9854838}
-  m_LocalPosition: {x: -11.8278, y: -7.1124, z: 0}
-  m_LocalScale: {x: 13.016058, y: 1.0847734, z: 1}
+  m_LocalPosition: {x: -8.94834, y: -11.1348095, z: 0}
+  m_LocalScale: {x: 13.016058, y: 1.0847737, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1884236792}
+  m_Father: {fileID: 1951887649}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 19.549}
+--- !u!114 &26627470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 26627466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b3334c0c3b52414aa5e8b471072c2ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tempoParaSumir: 1.5
+  tempoParaVoltar: 3
+  velocidadePiscada: 0.15
 --- !u!1 &151652647
 GameObject:
   m_ObjectHideFlags: 0
@@ -5051,8 +5067,6 @@ Transform:
   - {fileID: 1325149180}
   - {fileID: 1729287996}
   - {fileID: 732054623}
-  - {fileID: 26627469}
-  - {fileID: 1976450173}
   - {fileID: 541857406}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -5372,6 +5386,39 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!1 &1951887648
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1951887649}
+  m_Layer: 0
+  m_Name: PlataformasDissolviveis
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1951887649
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1951887648}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 17.533, y: -15.58132, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 26627469}
+  - {fileID: 1976450173}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1965958600
 GameObject:
   m_ObjectHideFlags: 0
@@ -5517,8 +5564,9 @@ GameObject:
   - component: {fileID: 1976450173}
   - component: {fileID: 1976450172}
   - component: {fileID: 1976450171}
+  - component: {fileID: 1976450174}
   m_Layer: 0
-  m_Name: Chao10
+  m_Name: Plataforma2
   m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5615,7 +5663,7 @@ SpriteRenderer:
   m_SortingLayer: 2
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.3584906, g: 0.16821143, b: 0.14001423, a: 1}
+  m_Color: {r: 0.4196079, g: 0.5568628, b: 0.1372549, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -5634,12 +5682,27 @@ Transform:
   m_GameObject: {fileID: 1976450170}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0.21772656, w: 0.97600985}
-  m_LocalPosition: {x: -25.37246, y: -6.6862717, z: 0}
+  m_LocalPosition: {x: -22.493, y: -10.708681, z: 0}
   m_LocalScale: {x: 12.4878235, y: 0.9840999, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1884236792}
+  m_Father: {fileID: 1951887649}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -25.151}
+--- !u!114 &1976450174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1976450170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b3334c0c3b52414aa5e8b471072c2ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tempoParaSumir: 1.5
+  tempoParaVoltar: 3
+  velocidadePiscada: 0.15
 --- !u!1 &2080299157
 GameObject:
   m_ObjectHideFlags: 0
@@ -5831,3 +5894,4 @@ SceneRoots:
   - {fileID: 846250713}
   - {fileID: 1129529550}
   - {fileID: 1590651686}
+  - {fileID: 1951887649}
