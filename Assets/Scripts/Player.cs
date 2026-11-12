@@ -6,7 +6,7 @@ public class Player : MonoBehaviour
     public float speed = 5f;
     private Rigidbody2D rb;
     private bool isGrounded = false;
-    
+    public MenuScene tela;
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -29,9 +29,9 @@ public class Player : MonoBehaviour
             isGrounded = true;
         }
 
-        if (collision.gameObject.CompareTag("Dano")) 
+        if (collision.gameObject.CompareTag("Dano Espinho")) 
         {
-            menu.MostrarGameOver();
+            tela.MostrarGameOver();
         
         
         }
