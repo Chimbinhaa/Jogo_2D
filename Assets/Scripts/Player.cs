@@ -32,14 +32,11 @@ public class Player : MonoBehaviour
         if (collision.gameObject.CompareTag("Dano Espinho")) 
         {
             tela.MostrarGameOver();
-        
-        
         }
+
         if (collision.gameObject.CompareTag("Inimigo"))
         {
             tela.MostrarGameOver();
-
-
         }
     }
     private void OnCollisionExit2D(Collision2D collision)
