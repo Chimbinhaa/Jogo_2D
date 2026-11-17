@@ -1,14 +1,15 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Vitoria : MonoBehaviour
 {
-    public TelaVitoria tela;
+    public string proximaFase = ("Jogo2");
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
-            tela.MostrarVitoria();
+            SceneManager.LoadScene(proximaFase);
         }
     }
 }
