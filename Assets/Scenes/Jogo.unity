@@ -213,7 +213,7 @@ GameObject:
   - component: {fileID: 18485964}
   m_Layer: 0
   m_Name: Inimigo1
-  m_TagString: Untagged
+  m_TagString: Inimigo
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -861,7 +861,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   painelPause: {fileID: 1101777484}
-  painelGameOver: {fileID: 626967116}
+  painelGameOver: {fileID: 868606343}
 --- !u!4 &189833579
 Transform:
   m_ObjectHideFlags: 0
@@ -2267,7 +2267,7 @@ GameObject:
   - component: {fileID: 727619913}
   m_Layer: 0
   m_Name: Inimigo2
-  m_TagString: Untagged
+  m_TagString: Inimigo
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3594,7 +3594,7 @@ GameObject:
   - component: {fileID: 1202919626}
   m_Layer: 0
   m_Name: Inimigo3
-  m_TagString: Untagged
+  m_TagString: Inimigo
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4914,7 +4914,6 @@ GameObject:
   - component: {fileID: 1632633222}
   - component: {fileID: 1632633221}
   - component: {fileID: 1632633220}
-  - component: {fileID: 1632633219}
   - component: {fileID: 1632633218}
   m_Layer: 0
   m_Name: Espinho3
@@ -4973,18 +4972,6 @@ PolygonCollider2D:
       - {x: -0.50167745, y: -0.40507567}
       - {x: 0.45474434, y: -0.3987078}
   m_UseDelaunayMesh: 0
---- !u!114 &1632633219
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1632633217}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad742994236c8b43be126cce90f2371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!50 &1632633220
 Rigidbody2D:
   serializedVersion: 5
@@ -5093,7 +5080,6 @@ GameObject:
   - component: {fileID: 1681835436}
   - component: {fileID: 1681835435}
   - component: {fileID: 1681835434}
-  - component: {fileID: 1681835433}
   - component: {fileID: 1681835432}
   m_Layer: 0
   m_Name: Espinho2
@@ -5152,18 +5138,6 @@ PolygonCollider2D:
       - {x: -0.5, y: -0.4175195}
       - {x: 0.5, y: -0.39911184}
   m_UseDelaunayMesh: 0
---- !u!114 &1681835433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1681835431}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad742994236c8b43be126cce90f2371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!50 &1681835434
 Rigidbody2D:
   serializedVersion: 5
@@ -5405,7 +5379,7 @@ Transform:
   m_GameObject: {fileID: 1684136491}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.8485, y: -0.3488, z: 2.68}
+  m_LocalPosition: {x: -5.58, y: -1.54, z: 2.68}
   m_LocalScale: {x: 1.553311, y: 1.4662521, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5584,7 +5558,6 @@ GameObject:
   - component: {fileID: 1748180411}
   - component: {fileID: 1748180415}
   - component: {fileID: 1748180414}
-  - component: {fileID: 1748180413}
   - component: {fileID: 1748180412}
   m_Layer: 0
   m_Name: EspinhoGrande2
@@ -5658,18 +5631,6 @@ PolygonCollider2D:
       - {x: -0.47571534, y: -0.3306517}
       - {x: 0.48924357, y: -0.33267343}
   m_UseDelaunayMesh: 0
---- !u!114 &1748180413
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1748180410}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad742994236c8b43be126cce90f2371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!50 &1748180414
 Rigidbody2D:
   serializedVersion: 5
@@ -5973,7 +5934,6 @@ GameObject:
   - component: {fileID: 1860773743}
   - component: {fileID: 1860773742}
   - component: {fileID: 1860773741}
-  - component: {fileID: 1860773740}
   - component: {fileID: 1860773739}
   m_Layer: 0
   m_Name: Espinho4
@@ -6032,18 +5992,6 @@ PolygonCollider2D:
       - {x: -0.5204721, y: -0.41066048}
       - {x: 0.466716, y: -0.43378687}
   m_UseDelaunayMesh: 0
---- !u!114 &1860773740
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1860773738}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad742994236c8b43be126cce90f2371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!50 &1860773741
 Rigidbody2D:
   serializedVersion: 5
@@ -6192,7 +6140,6 @@ GameObject:
   - component: {fileID: 1929937768}
   - component: {fileID: 1929937767}
   - component: {fileID: 1929937766}
-  - component: {fileID: 1929937765}
   - component: {fileID: 1929937769}
   m_Layer: 0
   m_Name: Espinho
@@ -6201,18 +6148,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1929937765
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1929937764}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad742994236c8b43be126cce90f2371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!50 &1929937766
 Rigidbody2D:
   serializedVersion: 5
@@ -6825,7 +6760,6 @@ GameObject:
   - component: {fileID: 2080299162}
   - component: {fileID: 2080299161}
   - component: {fileID: 2080299160}
-  - component: {fileID: 2080299159}
   - component: {fileID: 2080299158}
   m_Layer: 0
   m_Name: EspinhoGrande
@@ -6884,18 +6818,6 @@ PolygonCollider2D:
       - {x: -0.5809262, y: -0.3327172}
       - {x: 0.5477622, y: -0.33463687}
   m_UseDelaunayMesh: 0
---- !u!114 &2080299159
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2080299157}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad742994236c8b43be126cce90f2371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!50 &2080299160
 Rigidbody2D:
   serializedVersion: 5
