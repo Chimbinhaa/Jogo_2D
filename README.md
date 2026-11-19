@@ -31,9 +31,9 @@ Jogo para treinar versionamento de código com Git.
 
 03/11 Foram feitas mudanças e ajustes no projeto, corrigindo detalhes e melhorando partes do jogo que já estavam desenvolvidas.
 
-05/11 Mundo Senai.
+05/11 Mundo Senai (Fiquei apresentando o VR de manhã e a tarde dando suporte pro grupo todo).
 
-06/11 Mundo Senai.
+06/11 Mundo Senai (Apresentei mais do VR e ajudei/organizei as pessoas que também estavam apresentando).
 
 10/11 Foram adicionadas ao jogo a cena de pause e a cena de game over, além da função no botão ESC, que pausa o jogo e abre o painel de pause. Ao apertar ESC novamente, o jogo é retomado.
 
