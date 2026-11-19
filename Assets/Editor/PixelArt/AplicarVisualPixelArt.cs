@@ -27,6 +27,7 @@ namespace PixelArt
         const string Fontes = Art + "/Fontes";
         const string Animacoes = Art + "/Animacoes";
         const string NomeVisual = "Visual (pixel art)";
+        const string NomeFaixa = "Faixa do titulo (pixel art)";
 
         static readonly string[] Cenas = { "Assets/Scenes/Menu.unity", "Assets/Scenes/Jogo.unity", "Assets/Scenes/Jogo2.unity" };
 
@@ -41,7 +42,7 @@ namespace PixelArt
         {
             AssetDatabase.Refresh();
             var fonte = CriarFonte();
-            var matTitulo = CriarMaterialFonte(fonte, "Titulo", 0.18f, new Color(0.93f, 0.36f, 0.13f, 0.9f), 0.9f);
+            var matTitulo = CriarMaterialFonte(fonte, "Titulo", 0.22f, new Color(0.7f, 0.14f, 0.09f, 1f), 0.9f);
             var matSombra = CriarMaterialFonte(fonte, "Sombra", 0f, new Color(0.1f, 0.04f, 0.07f, 1f), 0.6f);
             var animDemonio = CriarAnimacao("Demonio", new[] { "Inimigos/demonio_coracao_0", "Inimigos/demonio_coracao_1" }, 6f);
             var animTrofeu = CriarAnimacao("Trofeu", new[] { "Objetos/trofeu_0", "Objetos/trofeu_0", "Objetos/trofeu_0",
@@ -146,28 +147,66 @@ namespace PixelArt
 
                 if (botao != null)
                 {
+                    var rtb = (RectTransform)img.transform;
+                    bool grande = altura >= 60;
+                    if (!grande)
+                    {
+                        // Botões das telas de pause/game over/vitória: maiores (44 px de altura).
+                        // Se tiver outro botão do lado, a largura diminui para não encostar nele.
+                        float largura = 200f;
+                        foreach (Transform irmao in rtb.parent)
+                        {
+                            if (irmao == rtb || irmao.GetComponent<Button>() == null) continue;
+                            var ri = (RectTransform)irmao;
+                            if (Mathf.Abs(ri.anchoredPosition.y - rtb.anchoredPosition.y) < 10f)
+                                largura = Mathf.Min(largura, Mathf.Abs(ri.anchoredPosition.x - rtb.anchoredPosition.x) - 14f);
+                        }
+                        Undo.RecordObject(rtb, "Pixel Art");
+                        rtb.sizeDelta = new Vector2(largura, 44f);
+                    }
                     img.sprite = S("UI/botao");
                     img.type = Image.Type.Sliced;
-                    img.pixelsPerUnitMultiplier = altura >= 60 ? 1f / 3f : 1f / 2f; // 1 pixel da arte = 2 ou 3 pixels de tela
+                    img.pixelsPerUnitMultiplier = grande ? 1f / 4f : 1f / 2f; // 1 pixel da arte = 4 ou 2 pixels de tela
                     img.color = Color.white;
+
+                    // Troca de sprite: acende com o mouse em cima e afunda ao clicar
                     Undo.RecordObject(botao, "Pixel Art");
-                    var cores = botao.colors;
-                    cores.normalColor = Color.white;
-                    cores.highlightedColor = new Color(1f, 0.82f, 0.62f);
-                    cores.selectedColor = new Color(1f, 0.9f, 0.8f);
-                    cores.pressedColor = new Color(0.7f, 0.55f, 0.5f);
-                    cores.fadeDuration = 0.05f;
-                    botao.colors = cores;
+                    botao.transition = Selectable.Transition.SpriteSwap;
+                    botao.spriteState = new SpriteState
+                    {
+                        highlightedSprite = S("UI/botao_hover"),
+                        pressedSprite = S("UI/botao_press"),
+                        selectedSprite = null,
+                        disabledSprite = null,
+                    };
+
+                    // Sombra embaixo do botão para ele "saltar" da tela
+                    var sombra = img.GetComponent<Shadow>();
+                    if (sombra == null) sombra = Undo.AddComponent<Shadow>(img.gameObject);
+                    sombra.effectColor = new Color(0.05f, 0.02f, 0.04f, 0.85f);
+                    sombra.effectDistance = grande ? new Vector2(6f, -6f) : new Vector2(4f, -4f);
                 }
                 else if (nomeSprite == "Background" || nomeSprite == "painel")
                 {
                     img.sprite = S("UI/painel");
                     img.type = Image.Type.Sliced;
-                    img.pixelsPerUnitMultiplier = 1f / 3f;
+                    img.pixelsPerUnitMultiplier = 1f / 3f; // moldura de 30 px
                     var n = img.gameObject.name;
                     img.color = n.Contains("Gameover") ? new Color(1f, 0.55f, 0.55f)
                               : n.Contains("Vitoria") ? new Color(1f, 0.9f, 0.55f)
                               : Color.white;
+
+                    // Se o título é "irmão" do painel e vem antes dele, o painel (semitransparente)
+                    // é desenhado por cima e apaga o título. Põe o painel primeiro (só ordem de desenho).
+                    var tp = img.transform;
+                    bool tituloAtras = false;
+                    for (int i = 0; i < tp.GetSiblingIndex(); i++)
+                        if (tp.parent.GetChild(i).GetComponent<TMP_Text>() != null) tituloAtras = true;
+                    if (tituloAtras)
+                    {
+                        Undo.SetTransformParent(tp, tp.parent, "Pixel Art");
+                        tp.SetAsFirstSibling();
+                    }
                 }
                 else if (nomeSprite.Contains("background do menu") || nomeSprite == "fundo_menu")
                 {
@@ -191,6 +230,10 @@ namespace PixelArt
                 }
                 else
                 {
+                    // Títulos: centralizados, em cima de uma faixa com borda dourada
+                    txt.alignment = TextAlignmentOptions.CenterGeoAligned;
+                    txt.margin = Vector4.zero;
+                    CriarFaixa(txt, S("UI/faixa_titulo"));
                     txt.fontSharedMaterial = matTitulo;
                     var cor = txt.color;
                     if (txt.text.Contains("Hell"))                            // título do menu
@@ -223,7 +266,7 @@ namespace PixelArt
             float limite = emBotao ? largura - 8f : (txt.text.Contains("Hell") ? rect.width : 560f);
             if (!emBotao) txt.textWrappingMode = TextWrappingModes.NoWrap;
 
-            float maximo = emBotao ? 40f : 56f;
+            float maximo = emBotao ? (rect.height >= 60 ? 40f : 24f) : 56f;
             txt.fontSize = Mathf.Clamp(Mathf.Floor(rect.height / 1.2f / 8f) * 8f, 16f, maximo);
             while (txt.fontSize > 16)
             {
@@ -233,6 +276,46 @@ namespace PixelArt
                 txt.fontSize -= 8;
             }
             Debug.Log($"[PixelArt] Texto '{txt.text}' -> tamanho {txt.fontSize} (caixa {rect.width:0}x{rect.height:0}, limite {limite:0})");
+        }
+
+        /// <summary>Cria (ou atualiza) a faixa decorativa atrás de um título.</summary>
+        static void CriarFaixa(TMP_Text txt, Sprite faixa)
+        {
+            var t = txt.rectTransform;
+            var pai = t.parent;
+            int idx = t.GetSiblingIndex();
+            var anterior = idx > 0 ? pai.GetChild(idx - 1) : null;
+            GameObject go;
+            if (anterior != null && anterior.name == NomeFaixa) go = anterior.gameObject;
+            else
+            {
+                go = new GameObject(NomeFaixa, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                Undo.RegisterCreatedObjectUndo(go, "Pixel Art");
+                go.transform.SetParent(pai, false);
+                go.transform.SetSiblingIndex(idx); // fica antes do texto = desenhada atrás dele
+                go.layer = txt.gameObject.layer;
+            }
+            var r = (RectTransform)go.transform;
+            r.anchorMin = t.anchorMin;
+            r.anchorMax = t.anchorMax;
+            r.pivot = new Vector2(0.5f, 0.5f);
+            r.localScale = Vector3.one;
+            r.anchoredPosition = t.anchoredPosition + Vector2.Scale(new Vector2(0.5f, 0.5f) - t.pivot, t.rect.size);
+
+            txt.ForceMeshUpdate();
+            Vector2 pref = txt.GetPreferredValues(txt.text, 10000f, 10000f);
+            r.sizeDelta = new Vector2(pref.x + 84f, txt.fontSize * 1.25f + 24f);
+
+            var img = go.GetComponent<Image>();
+            img.sprite = faixa;
+            img.type = Image.Type.Sliced;
+            img.pixelsPerUnitMultiplier = 1f / 3f;
+            img.raycastTarget = false;
+            img.color = Color.white;
+            var sombra = go.GetComponent<Shadow>();
+            if (sombra == null) sombra = go.AddComponent<Shadow>();
+            sombra.effectColor = new Color(0.05f, 0.02f, 0.04f, 0.8f);
+            sombra.effectDistance = new Vector2(5f, -5f);
         }
 
         // ------------------------------------------------------------------

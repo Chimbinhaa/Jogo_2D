@@ -38,8 +38,11 @@ namespace PixelArt
                 case "trofeu_2":
                 case "trofeu_3":               return new Config(10.49f);         // 30x31 px -> 2.86 x 2.96
                 case "fundo_inferno":          return new Config(102.3f);         // 757x413 px -> 7.4 x 4.04
-                case "botao":                  return new Config(100f, new Vector4(2, 3, 2, 3));
-                case "painel":                 return new Config(100f, new Vector4(6, 6, 6, 6));
+                case "botao":
+                case "botao_hover":
+                case "botao_press":            return new Config(100f, new Vector4(4, 4, 4, 4));
+                case "painel":                 return new Config(100f, new Vector4(10, 10, 10, 10));
+                case "faixa_titulo":           return new Config(100f, new Vector4(8, 5, 8, 5));
                 case "fundo_menu":             return new Config(100f);
                 default:                       return new Config(16f);            // padrão: 16 px = 1 unidade
             }

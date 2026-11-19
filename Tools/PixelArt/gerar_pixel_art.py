@@ -235,68 +235,68 @@ def gradiente(cores, t, x, y):
 # ---------------------------------------------------------------------------
 # PERSONAGEM: Agenor (18x36, de frente)
 # ---------------------------------------------------------------------------
-def agenor():
-    g = Grade(18, 36)
-    # pernas e pes
-    g.ret(5, 26, 7, 32, "pele")
-    g.ret(10, 26, 12, 32, "pele")
-    g.ret(4, 33, 7, 34, "pele")
-    g.ret(10, 33, 13, 34, "pele")
-    # bracos
-    g.ret(1, 13, 3, 21, "pele")
-    g.ret(14, 13, 16, 21, "pele")
-    g.ret(1, 22, 3, 23, "pele")
-    g.ret(14, 22, 16, 23, "pele")
-    # tronco (ombros largos -> cintura)
-    g.poligono([(2, 11.5), (16, 11.5), (13.5, 22), (4.5, 22)], "pele")
-    # pescoco e cabeca
-    g.ret(7, 9, 10, 12, "pele")
-    g.elipse(9, 5.2, 4.2, 4.8, "pele")
-    # cueca branca
-    g.ret(5, 21, 12, 25, "branco")
-    img_base = g
+# Desenhado a mao, pixel por pixel. Cada letra e uma cor:
+#   o contorno | 1-4 pele (escura -> clara) | r R bandana | k preto (olhos, bigode)
+#   e branco do olho | w g cueca (branco / sombra) | h coracao
+AGENOR_CORES = {
+    ".": None, "o": "preto", "1": "pele0", "2": "pele1", "3": "pele2", "4": "pele3",
+    "r": "verm2", "R": "verm1", "w": "branco", "g": "cinza", "h": "verm2", "e": "branco", "k": "preto",
+}
+AGENOR_CABECA = [
+    "......oooooo......",  # 0  careca
+    ".....o334443o.....",
+    "....o33344433o....",
+    "....orrrrrrrro.rR.",  # 3  bandana (com a ponta do no voando)
+    "....oRRRRRRRRoRr..",
+    "....o3kk33kk2o.o..",  # 5  sobrancelhas bravas
+    "...oo3ek33ke2oo...",  # 6  olhos
+    "...o2333423222o...",  # 7  nariz e orelhas
+    "....o32kkkk22o....",  # 8  bigode
+    ".....o212212o.....",  # 9  barba por fazer
+    "......o1111o......",  # 10 pescoco
+    "..oooo233332oooo..",  # 11 trapezio
+    ".o44333333333322o.",  # 12 ombros
+]
+AGENOR_TRONCO = [  # (braco esq, separacao, peito/abdomen, separacao, braco dir)
+    ("343", "1", "44432332", "1", "322"),
+    ("343", "1", "44432332", "1", "321"),
+    ("342", "1", "22212222", "1", "321"),
+    ("343", "1", "33424322", "1", "321"),  # gominhos
+    ("343", "1", "33212322", "1", "321"),
+    ("343", "1", "33424322", "1", "321"),
+    ("233", "1", "33212322", "1", "221"),
+    ("343", "1", "23424321", "1", "321"),
+    ("344", "o", "23333221", "o", "321"),
+]
+AGENOR_CUECA = ["gggggggg", "wwhwhwwg", "whhhhhwg", "wwhhhwwg", "wwwhwwwg", "wwwoowwg"]
 
-    # detalhes pintados por cima
-    d = g.pintar
-    # sobrancelhas bravas
-    for x, y in ((6, 4), (7, 4), (7, 5), (11, 4), (12, 4), (10, 5)):
-        d(x, y, "preto")
-    # olhos
-    d(6, 6, "branco"); d(7, 6, "preto")
-    d(12, 6, "branco"); d(10, 6, "preto")
-    d(11, 6, "branco")
-    d(8, 6, "pele2"); d(9, 6, "pele2")
-    # nariz e boca (cara fechada)
-    d(9, 7, "pele1")
-    d(8, 9, "pele0"); d(9, 9, "pele0"); d(10, 9, "pele0")
-    # brilho da careca
-    d(7, 1, "pele3"); d(8, 1, "pele3"); d(6, 2, "pele3")
-    # peitoral e abdomen
-    for x in range(5, 13):
-        if x not in (8, 9):
-            d(x, 15, "pele1")
-    d(8, 16, "pele1"); d(9, 16, "pele1")
-    for y in (17, 19):
-        d(7, y, "pele1"); d(10, y, "pele1")
-    for y in range(17, 21):
-        d(8, y, "pele1") if y % 2 else None
-    # separacao bracos / tronco
-    for y in range(13, 22):
-        d(3, y, "pele1"); d(14, y, "pele1")
-    # maos
-    d(1, 23, "pele1"); d(16, 23, "pele1")
-    # coracoes na cueca
-    for (hx, hy) in ((6, 22), (10, 23)):
-        d(hx, hy, "verm2"); d(hx + 2, hy, "verm2")
-        d(hx, hy + 1, "verm2"); d(hx + 1, hy + 1, "verm2"); d(hx + 2, hy + 1, "verm2")
-        d(hx + 1, hy + 2, "verm2")
-    # elastico da cueca
-    for x in range(5, 13):
-        d(x, 21, "cinza")
-    # separacao das pernas
-    for y in range(24, 26):
-        d(8, y, "cinza"); d(9, y, "cinza")
-    return img_base.imagem()
+
+def agenor_linhas():
+    L = list(AGENOR_CABECA)
+    for a, s1, c, s2, b in AGENOR_TRONCO:
+        L.append("o" + a + s1 + c + s2 + b + "o")
+    cu = AGENOR_CUECA
+    L.append("o334o" + cu[0] + "o221o")           # maos
+    L.append("o343o" + cu[1] + "o321o")
+    L.append(".oooo" + cu[2] + "oooo.")
+    for linha in cu[3:]:
+        L.append("....o" + linha + "o....")
+    for e, d in [("343", "332"), ("343", "321"), ("233", "321"), ("343", "332"), ("343", "321"), ("233", "221")]:
+        L.append("....o" + e + "oo" + d + "o....")  # pernas
+    L.append("...o3433oo3322o...")                    # pes
+    L.append("...oooooooooooo...")
+    return L
+
+
+def agenor():
+    linhas = agenor_linhas()
+    assert len(linhas) == 36 and all(len(l) == 18 for l in linhas)
+    img = Image.new("RGBA", (18, 36), T)
+    for y, l in enumerate(linhas):
+        for x, ch in enumerate(l):
+            if AGENOR_CORES[ch]:
+                img.putpixel((x, y), PAL[AGENOR_CORES[ch]])
+    return img
 
 
 # ---------------------------------------------------------------------------
@@ -682,61 +682,103 @@ def fundo_menu():
 # ---------------------------------------------------------------------------
 # UI: botao e painel (9-slice)
 # ---------------------------------------------------------------------------
-def botao():
-    w = h = 16
-    img = Image.new("RGBA", (w, h), PAL["vinho"])
+def botao(estado="normal"):
+    """Botao 24x16 com moldura dourada e relevo (9-slice com bordas de 4 px).
+    estado: 'normal', 'hover' (mouse em cima: brilha) ou 'press' (afundado)."""
+    w, h = 24, 16
+    img = Image.new("RGBA", (w, h), T)
     px = img.load()
+    if estado == "hover":
+        cima, meio, baixo, brilho, aro, aro_esc, dentro = "lava3", "lava2", "lava1", "lava4", "ouro3", "ouro2", "lava0"
+    elif estado == "press":
+        cima, meio, baixo, brilho, aro, aro_esc, dentro = "verm1", "verm1", "verm0", "verm0", "ouro1", "ouro0", "verm0"
+    else:
+        cima, meio, baixo, brilho, aro, aro_esc, dentro = "verm2", "verm1", "verm0", "verm3", "ouro2", "ouro1", "verm0"
     for y in range(h):
         for x in range(w):
-            if y < 7:
-                px[x, y] = PAL["verm1"]
-            elif y < 12:
-                px[x, y] = PAL["lava0"]
+            borda = min(x, y, w - 1 - x, h - 1 - y)
+            if borda == 0:
+                cor = "preto"
+            elif borda == 1:
+                cor = aro if (y < h - 2 and x < w - 2) else aro_esc
+            elif borda == 2:
+                cor = dentro
             else:
-                px[x, y] = PAL["verm0"]
-    for x in range(w):
-        px[x, 1] = PAL["lava2"]
-        px[x, 2] = PAL["verm2"]
-        px[x, h - 3] = PAL["noite"]
-        px[x, h - 2] = PAL["noite"]
-    for y in range(h):
-        px[1, y] = PAL["lava2"] if y < h - 3 else PAL["noite"]
-        px[w - 2, y] = PAL["noite"]
-    for i in range(w):
-        px[i, 0] = PAL["preto"]
-        px[i, h - 1] = PAL["preto"]
-        px[0, i] = PAL["preto"]
-        px[w - 1, i] = PAL["preto"]
+                t = (y - 3) / (h - 6)
+                cor = cima if t < 0.45 else (meio if t < 0.85 else baixo)
+                if y == 3:
+                    cor = brilho
+            px[x, y] = PAL[cor]
+    # rebites dourados
+    for (x, y) in ((3, 3), (w - 4, 3), (3, h - 4), (w - 4, h - 4)):
+        px[x, y] = PAL["ouro3" if estado != "press" else "ouro1"]
     for (x, y) in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
         px[x, y] = T
     return img
 
 
 def painel():
-    w = h = 24
+    """Painel 32x32 (9-slice com bordas de 10 px): moldura de rocha + aro dourado + brilho de lava."""
+    w = h = 32
     img = Image.new("RGBA", (w, h), T)
     px = img.load()
     for y in range(h):
         for x in range(w):
-            borda = min(x, y, w - 1 - x, h - 1 - y)
-            if borda == 0:
+            b = min(x, y, w - 1 - x, h - 1 - y)
+            claro = x + y < w  # metade de cima/esquerda recebe luz
+            if b == 0:
                 cor = PAL["preto"]
-            elif borda == 1:
-                cor = PAL["rocha3"] if (x < w // 2 and y < h // 2) else PAL["rocha2"]
-            elif borda in (2, 3):
-                cor = PAL["rocha1"] if (x + y) % 4 else PAL["rocha2"]
-            elif borda == 4:
+            elif b == 1:
+                cor = PAL["ouro3" if claro else "ouro1"]
+            elif b == 2:
+                cor = PAL["ouro2" if claro else "ouro0"]
+            elif b == 3:
                 cor = PAL["preto"]
-            elif borda == 5:
-                cor = PAL["lava1"]
+            elif b in (4, 5, 6):
+                cor = PAL["rocha2" if (x * 3 + y * 5) % 7 == 0 else ("rocha3" if claro and b == 4 else "rocha1")]
+            elif b == 7:
+                cor = PAL["preto"]
+            elif b == 8:
+                cor = PAL["lava2"]
+            elif b == 9:
+                cor = c("6e1018", 235)
             else:
-                cor = c("1a0a12", 215)  # miolo escuro meio transparente
+                cor = c("1a0a12", 232)
             px[x, y] = cor
     # rebites nos cantos
-    for (x, y) in ((2, 2), (w - 3, 2), (2, h - 3), (w - 3, h - 3)):
-        px[x, y] = PAL["lava3"]
+    for (x, y) in ((5, 5), (w - 6, 5), (5, h - 6), (w - 6, h - 6)):
+        px[x, y] = PAL["lava4"]
+        for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
+            px[x + dx, y + dy] = PAL["ouro1"]
     for (x, y) in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
         px[x, y] = T
+    return img
+
+
+def faixa_titulo():
+    """Faixa atras dos titulos (32x16, 9-slice: pontas de 8 px, cima/baixo 5 px)."""
+    w, h = 32, 16
+    img = Image.new("RGBA", (w, h), T)
+    px = img.load()
+    for y in range(h):
+        recuo = abs(y - (h - 1) / 2)
+        ponta = int(max(0, 4 - recuo * 0.6))  # pontas em forma de seta (cauda de fita)
+        x0, x1 = 4 - ponta, w - 5 + ponta
+        if y in (0, h - 1):
+            x0, x1 = 5, w - 6
+        for x in range(x0, x1 + 1):
+            b = min(y, h - 1 - y, x - x0, x1 - x)
+            if b == 0:
+                cor = PAL["preto"]
+            elif b == 1:
+                cor = PAL["ouro2"] if y < h / 2 else PAL["ouro1"]
+            elif b == 2:
+                cor = PAL["preto"]
+            else:
+                cor = PAL["vinho"] if y < h * 0.55 else PAL["noite"]
+                if y == 3:
+                    cor = PAL["verm1"]
+            px[x, y] = cor
     return img
 
 
@@ -1096,6 +1138,9 @@ def main():
     salvar(fundo.resize((757, 413), Image.NEAREST), "Sprites", "Cenario", "fundo_inferno.png")
     imgs["menu"] = salvar(fundo_menu(), "Sprites", "UI", "fundo_menu.png")
     imgs["botao"] = salvar(botao(), "Sprites", "UI", "botao.png")
+    imgs["botao_hover"] = salvar(botao("hover"), "Sprites", "UI", "botao_hover.png")
+    imgs["botao_press"] = salvar(botao("press"), "Sprites", "UI", "botao_press.png")
+    imgs["faixa"] = salvar(faixa_titulo(), "Sprites", "UI", "faixa_titulo.png")
     imgs["painel"] = salvar(painel(), "Sprites", "UI", "painel.png")
     gerar_ttf(os.path.join(ART, "Fontes", "PixelInferno.ttf"))
 
@@ -1103,7 +1148,7 @@ def main():
     os.makedirs(DOCS, exist_ok=True)
     folha = Image.new("RGBA", (1200, 760), PAL["noite"])
     x, y = 10, 10
-    for nome in ["agenor", "demonio0", "demonio1", "espinho", "tile", "trofeu0", "trofeu2", "botao", "painel"]:
+    for nome in ["agenor", "demonio0", "demonio1", "espinho", "tile", "trofeu0", "trofeu2", "botao", "botao_hover", "botao_press", "painel", "faixa"]:
         im = imgs[nome]
         esc = 6
         big = im.resize((im.width * esc, im.height * esc), Image.NEAREST)

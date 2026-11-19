@@ -27,7 +27,7 @@ Assets/
 │   │   ├── Inimigos/            demonio_coracao_0/1.png (2 quadros de animação)
 │   │   ├── Cenario/             tile_rocha, plataforma_dissolvivel, espinho, estalagmite, fundo_inferno
 │   │   ├── Objetos/             trofeu_0..3.png (brilho animado)
-│   │   └── UI/                  botao, painel, fundo_menu
+│   │   └── UI/                  botao (+ _hover e _press), painel, faixa_titulo, fundo_menu
 │   ├── Animacoes/               Demonio (asas batendo) e Trofeu (brilho) — clips + controllers
 │   ├── Fontes/                  PixelInferno.ttf + PixelInferno SDF (TextMeshPro) + materiais
 │   └── _Antigos/                sprites antigos (não usados mais, guardados por segurança)
@@ -59,7 +59,7 @@ Regras do estilo: contorno escuro de 1 pixel em tudo, luz vindo de **cima/esquer
 
 | Antes | Agora | Detalhe técnico |
 |---|---|---|
-| Agenor (foto recortada) | Agenor 18×36 px, careca e de cueca de coração | mesmo tamanho na tela (PPU 24.49) |
+| Agenor (foto recortada) | Agenor 18×36 px desenhado pixel a pixel: bandana vermelha, sobrancelhas bravas, bigode, tanquinho e cueca de coração | mesmo tamanho na tela (PPU 24.49); o desenho fica na tabela `AGENOR_CABECA`/`AGENOR_TRONCO` do script |
 | Inimigo coração | Demônio-coração com chifres e asas de morcego | animação de 2 quadros (Animator só troca o sprite) |
 | Espinho cinza | Espinho de rocha com ponta incandescente | o `PolygonCollider2D` antigo foi mantido |
 | Espinho gigante (esticado) | Estalagmite de 38×142 px com veio de lava | sprite "pré-esticado" para os pixels ficarem quadrados |
@@ -67,7 +67,7 @@ Regras do estilo: contorno escuro de 1 pixel em tudo, luz vindo de **cima/esquer
 | Plataforma que some (verde) | Plataforma de enxofre rachada | o sprite fica no próprio objeto, então continua piscando pelo script |
 | Troféu | Troféu de ouro com chama e brilho animado | animação de 7 quadros |
 | Fundo do inferno | Caverna infernal: pilares, névoa de brasa, cascatas e mar de lava | gerado por código, 8 px por unidade |
-| UI padrão da Unity | Botões de pedra-brasa e painéis com moldura de rocha | *9-slice*, 1 pixel da arte = 2 ou 3 pixels da tela |
+| UI padrão da Unity | Botões vermelhos com aro dourado e rebites, painéis com moldura dourada + rocha + filete de lava, títulos em uma faixa dourada | *9-slice*, 1 pixel da arte = 2 a 4 pixels da tela |
 | Fonte LiberationSans | Fonte própria **PixelInferno** (com acentos: ã, ç, ê...) | `.ttf` gerado pelo script + asset SDF do TextMeshPro |
 | Fundo do menu | Paisagem do inferno com o Agenor ao lado dos botões | |
 
@@ -76,7 +76,16 @@ Também mudou:
 - O fundo ganhou *Sorting Order* -100, para ficar sempre atrás de tudo.
 - **Textos:** fonte nova, cores da paleta e tamanhos múltiplos de 8. Os títulos não quebram mais de linha
   ("Você morreu! Game over" fica numa linha só).
-- **Botões:** as cores de passar o mouse e de clicar ficaram mais quentes.
+- **Botões mais destacados:** cada botão tem 3 desenhos — normal (vermelho), mouse em cima (laranja brilhante) e
+  clicado (afundado). A troca é feita pelo próprio `Button` (transição *Sprite Swap*). Todos ganharam uma sombra
+  (componente `Shadow`) para "saltarem" da tela.
+- **Botões das telas de pause / game over / vitória** ficaram maiores: 200×44 (ou 168×44 quando há outro botão do
+  lado, como "Jogar Novamente" e "Sair"). Só o tamanho do retângulo da UI mudou; posições e funções dos botões são as mesmas.
+- **Títulos** ("7 Hell's", "Pausado", "Você morreu! Game over", "Você Venceu!") ficam centralizados sobre uma faixa
+  com borda dourada. Ela é um objeto novo, **"Faixa do titulo (pixel art)"**, criado logo antes do texto na hierarquia
+  (só imagem, não recebe clique).
+- No game over, o painel passou a ser desenhado antes do título (ordem na hierarquia), porque o fundo
+  semitransparente dele estava apagando o texto.
 
 ### O que NÃO mudou (conferido)
 Foram comparadas as cenas antes e depois, componente por componente. Continuam idênticos:
