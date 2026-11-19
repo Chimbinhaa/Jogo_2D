@@ -26,6 +26,10 @@ namespace PixelArt
         {
             // Quadros de animação do player: mesmo tamanho do agenor.png
             if (arquivo.StartsWith("agenor_")) arquivo = "agenor";
+            // Camadas de paralaxe e quadros da crosta de lava: mesmo tamanho do original
+            if (arquivo.StartsWith("fundo_inferno_")) arquivo = "fundo_inferno";
+            if (arquivo.StartsWith("tile_rocha_")) arquivo = "tile_rocha";
+            if (arquivo.StartsWith("brasa_")) return new Config(8f); // 1 px = 1 px do fundo (0,125 unidade)
 
             switch (arquivo)
             {

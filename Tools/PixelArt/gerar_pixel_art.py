@@ -449,7 +449,8 @@ def estalagmite():
 # ---------------------------------------------------------------------------
 # CHAO / PAREDES: tile 16x16 com 9-slice (bordas fixas, miolo repete)
 # ---------------------------------------------------------------------------
-def tile_rocha():
+def tile_rocha(quadro=0):
+    """Ladrilho de rocha 16x16. 'quadro' (0-3) move o brilho da crosta de lava (animacao)."""
     img = Image.new("RGBA", (16, 16), PAL["rocha1"])
     px = img.load()
     rnd = random.Random(3)
@@ -471,12 +472,13 @@ def tile_rocha():
     # crosta de lava no topo
     for x in range(16):
         px[x, 0] = PAL["preto"]
-        px[x, 1] = PAL["lava3"] if x % 5 else PAL["lava4"]
-        px[x, 2] = PAL["lava2"]
-        px[x, 3] = PAL["lava1"] if x % 3 else PAL["lava2"]
+        xq = x + quadro * 4  # o brilho anda 4 px por quadro (16 px = volta completa em 4 quadros)
+        px[x, 1] = PAL["lava4"] if xq % 16 in (0, 1, 8) else PAL["lava3"]
+        px[x, 2] = PAL["lava3"] if xq % 16 in (1, 9) else PAL["lava2"]
+        px[x, 3] = PAL["lava1"] if (x + quadro) % 3 else PAL["lava2"]
     # pingos de lava
     for (x, y) in ((2, 4), (9, 4), (13, 4), (13, 5)):
-        px[x, y] = PAL["lava1"]
+        px[x, y] = PAL["lava2"] if (x + quadro) % 4 == 0 else PAL["lava1"]
     # bordas laterais e inferior
     for y in range(1, 16):
         px[0, y] = PAL["preto"]
@@ -699,6 +701,135 @@ def fundo_inferno(w, h, semente=5, sem_ceu=False):
         if rnd.random() < 0.25:  # algumas brasas maiores
             px[x + 1, y] = PAL["lava2"]
             px[x, y + 1] = PAL["lava2"]
+    return img
+
+
+def fundo_inferno_camadas(w, h, semente=5, quadros_lava=4):
+    """O mesmo cenario do fundo_inferno, separado em camadas para o efeito de paralaxe
+    (cada camada anda numa velocidade diferente quando a camera se move).
+    Retorna {nome: imagem}. A lava (cascatas + mar) tem varios quadros de animacao."""
+    rnd = random.Random(semente)
+    camadas = {}
+
+    # 1) CEU: gradiente + nevoa quente (opaca, fica atras de tudo)
+    ceu = Image.new("RGBA", (w, h), PAL["noite"])
+    px = ceu.load()
+    for y in range(h):
+        t = (y / h) ** 1.6
+        for x in range(w):
+            px[x, y] = gradiente(CEU, t * 0.95, x, y)
+    for _ in range(max(2, h // 70)):
+        cy = rnd.uniform(0.15, 0.75) * h
+        esp = rnd.uniform(0.03, 0.07) * h
+        for y in range(max(0, int(cy - esp)), min(h, int(cy + esp))):
+            t = 1 - abs(y - cy) / esp
+            for x in range(w):
+                ondula = (math.sin(x * 0.013 + cy) + math.sin(x * 0.037 + cy * 2)) * 0.35
+                if dither(x, y, t * (0.3 + ondula * 0.8)):
+                    px[x, y] = PAL["lava0"] if px[x, y] != PAL["lava1"] else PAL["lava2"]
+    camadas["fundo_inferno_ceu"] = ceu
+
+    # 2) PILARES + montanhas mais distantes
+    pil = Image.new("RGBA", (w, h), T)
+    px = pil.load()
+    x = rnd.randint(0, 40)
+    while x < w:
+        larg = rnd.randint(14, 34)
+        fase = rnd.uniform(0, 6)
+        for y in range(h):
+            meia = larg / 2 * (0.75 + 0.25 * math.sin(y * 0.03 + fase)) + 3 * math.sin(y * 0.11 + fase)
+            for xx in range(int(x - meia), int(x + meia) + 1):
+                if 0 <= xx < w:
+                    borda = abs(xx - x) > meia - 1.5
+                    px[xx, y] = PAL["rocha1"] if borda and xx < x else (PAL["vinho"] if borda else PAL["rocha0"])
+            if y % 23 == int(fase * 3) % 23:
+                for k in range(3):
+                    xx = int(x - meia / 2) + k
+                    if 0 <= xx < w and y + k < h:
+                        px[xx, y + k] = PAL["lava1"]
+        x += larg + rnd.randint(50, 130)
+
+    def montanha(img, base, amp, cor, borda):
+        p = img.load()
+        linha = silhueta(w, base * h, amp * h, rnd, passos=8)
+        for x in range(w):
+            topo = int(linha[x])
+            for y in range(max(0, topo), h):
+                p[x, y] = cor
+            if 0 <= topo < h:
+                p[x, topo] = borda
+
+    montanha(pil, 0.58, 0.10, PAL["vinho"], PAL["lava1"])
+    camadas["fundo_inferno_pilares"] = pil
+
+    # 3) MONTANHAS mais perto
+    mont = Image.new("RGBA", (w, h), T)
+    montanha(mont, 0.70, 0.12, PAL["rocha1"], PAL["lava2"])
+    montanha(mont, 0.84, 0.10, PAL["rocha0"], PAL["lava3"])
+    camadas["fundo_inferno_montanhas"] = mont
+
+    # 4) LAVA: cascatas escorrendo + mar de lava ondulando (animada)
+    cascatas = []
+    for _ in range(max(2, w // 220)):
+        cascatas.append((rnd.randint(10, w - 10), rnd.randint(2, 3), int(h * rnd.uniform(0.72, 0.9))))
+    nivel = int(h * 0.9)
+    for q in range(quadros_lava):
+        lava = Image.new("RGBA", (w, h), T)
+        px = lava.load()
+        for x0, larg, y_fim in cascatas:
+            for y in range(0, y_fim):
+                ondula = int(math.sin(y * 0.15 + x0) * 0.8)
+                for k in range(-3, larg + 3):
+                    xx = x0 + k + ondula
+                    if 0 <= xx < w and dither(xx, y, 0.35 - abs(k - larg / 2) * 0.08):
+                        px[xx, y] = PAL["lava0"]
+                for k in range(larg):
+                    cor = PAL["lava2"] if k == larg // 2 else PAL["lava1"]
+                    # os pontos claros descem 2 px por quadro (parece escorrer)
+                    if (y - q * 2 + k) % 8 == 0:
+                        cor = PAL["lava3"]
+                    xx = x0 + k + ondula
+                    if 0 <= xx < w:
+                        px[xx, y] = cor
+        fase = q * 2 * math.pi / quadros_lava
+        for y in range(nivel, h):
+            for x in range(w):
+                onda = math.sin(x * 0.21 + y * 1.7 + math.sin(y * 3.1) * 2 + fase) + math.sin(x * 0.047 - y + fase)
+                px[x, y] = PAL["lava3"] if onda > 1.2 else (PAL["lava2"] if onda > -0.9 else PAL["lava1"])
+        for x in range(w):
+            px[x, nivel] = PAL["lava4"] if (x // 3 + q) % 4 else PAL["lava3"]
+        camadas[f"fundo_inferno_lava_{q}"] = lava
+
+    # 5) TETO: estalactites (camada mais perto)
+    teto = Image.new("RGBA", (w, h), T)
+    px = teto.load()
+    x = 0
+    while x < w:
+        larg = rnd.randint(3, 9)
+        comp = rnd.randint(int(h * 0.04), int(h * 0.16))
+        for y in range(comp):
+            meia = larg * (1 - y / comp) / 2
+            for xx in range(int(x + larg / 2 - meia), int(x + larg / 2 + meia) + 1):
+                if 0 <= xx < w:
+                    px[xx, y] = PAL["rocha0"] if y < comp - 1 else PAL["rocha1"]
+        x += larg + rnd.randint(0, 6)
+    for x in range(w):
+        for y in range(0, int(h * 0.025)):
+            px[x, y] = PAL["preto"]
+    camadas["fundo_inferno_teto"] = teto
+    return camadas
+
+
+def brasa(quadro):
+    """Brasa voando (3x3 px), 2 quadros: acesa e piscando."""
+    img = Image.new("RGBA", (3, 3), T)
+    px = img.load()
+    if quadro == 0:
+        px[1, 1] = PAL["lava4"]
+        for (x, y) in ((0, 1), (2, 1), (1, 0), (1, 2)):
+            px[x, y] = PAL["lava2"]
+    else:
+        px[1, 1] = PAL["lava3"]
     return img
 
 
@@ -1182,12 +1313,19 @@ def main():
     # objeto com escala 1.75 x 10.23 -> pixels esticados 6x na horizontal
     salvar(esticar_linhas(est, 6, 1), "Sprites", "Cenario", "estalagmite.png")
     imgs["tile"] = salvar(tile_rocha(), "Sprites", "Cenario", "tile_rocha.png")
+    for q in range(1, 4):
+        salvar(tile_rocha(q), "Sprites", "Cenario", "Animacao", f"tile_rocha_{q}.png")
     imgs["plataforma"] = salvar(plataforma_dissolvivel(), "Sprites", "Cenario", "plataforma_dissolvivel.png")
     for q in range(4):
         imgs[f"trofeu{q}"] = salvar(trofeu(q), "Sprites", "Objetos", f"trofeu_{q}.png")
     fundo = fundo_inferno(757, 398)
     # o objeto do fundo tem escala 12.79 x 12.32: as linhas sao levemente esticadas
     salvar(fundo.resize((757, 413), Image.NEAREST), "Sprites", "Cenario", "fundo_inferno.png")
+    # Paralaxe: o mesmo fundo em camadas (mesmo tamanho e esticamento do fundo_inferno.png)
+    for nome, camada in fundo_inferno_camadas(757, 398).items():
+        salvar(camada.resize((757, 413), Image.NEAREST), "Sprites", "Cenario", "Paralaxe", nome + ".png")
+    for q in (0, 1):
+        salvar(brasa(q), "Sprites", "Cenario", f"brasa_{q}.png")
     imgs["menu"] = salvar(fundo_menu(), "Sprites", "UI", "fundo_menu.png")
     imgs["botao"] = salvar(botao(), "Sprites", "UI", "botao.png")
     imgs["botao_hover"] = salvar(botao("hover"), "Sprites", "UI", "botao_hover.png")

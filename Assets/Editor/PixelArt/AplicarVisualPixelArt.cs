@@ -47,6 +47,10 @@ namespace PixelArt
             var animDemonio = CriarAnimacao("Demonio", new[] { "Inimigos/demonio_coracao_0", "Inimigos/demonio_coracao_1" }, 6f);
             var animTrofeu = CriarAnimacao("Trofeu", new[] { "Objetos/trofeu_0", "Objetos/trofeu_0", "Objetos/trofeu_0",
                                                              "Objetos/trofeu_0", "Objetos/trofeu_1", "Objetos/trofeu_2", "Objetos/trofeu_3" }, 10f);
+            animCrosta = CriarAnimacao("CrostaLava", new[] { "Cenario/tile_rocha", "Cenario/Animacao/tile_rocha_1",
+                                                             "Cenario/Animacao/tile_rocha_2", "Cenario/Animacao/tile_rocha_3" }, 5f);
+            animFundoLava = CriarAnimacao("FundoLava", new[] { "Cenario/Paralaxe/fundo_inferno_lava_0", "Cenario/Paralaxe/fundo_inferno_lava_1",
+                                                               "Cenario/Paralaxe/fundo_inferno_lava_2", "Cenario/Paralaxe/fundo_inferno_lava_3" }, 6f);
 
             foreach (var caminho in Cenas)
             {
@@ -132,6 +136,9 @@ namespace PixelArt
 
             AnimarPlayer(S);
             AjustarHitboxes();
+            MontarParalaxe(S);
+            AnimarCrostaDeLava();
+            ColocarBrasas(S);
 
             // Cor de fundo da câmera combinando com o topo do cenário
             foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -282,6 +289,77 @@ namespace PixelArt
         }
 
         /// <summary>Coloca o PlayerAnimacao no player com os quadros desenhados.</summary>
+        static RuntimeAnimatorController animCrosta, animFundoLava;
+
+        // Camadas do fundo: (arquivo, fator de paralaxe, ordem de desenho).
+        // Fator alto = longe (quase acompanha a câmera); fator baixo = perto.
+        static readonly (string nome, float fator, int ordem)[] CamadasFundo =
+        {
+            ("ceu",       0.90f, -100),
+            ("pilares",   0.70f,  -99),
+            ("montanhas", 0.50f,  -98),
+            ("lava_0",    0.50f,  -97),
+            ("teto",      0.30f,  -96),
+        };
+
+        /// <summary>Troca o fundo único por camadas com paralaxe (filhos do objeto do fundo).</summary>
+        static void MontarParalaxe(System.Func<string, Sprite> S)
+        {
+            foreach (var sr in Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (sr.sprite == null || sr.sprite.name != "fundo_inferno") continue;
+                var t = sr.transform;
+                foreach (var (nome, fator, ordem) in CamadasFundo)
+                {
+                    string nomeObj = $"Camada {nome.Replace("_0", "")} (pixel art)";
+                    var existente = t.Find(nomeObj);
+                    var go = existente != null ? existente.gameObject : new GameObject(nomeObj);
+                    if (existente == null) Undo.RegisterCreatedObjectUndo(go, "Paralaxe");
+                    go.transform.SetParent(t, false);
+                    go.transform.localPosition = Vector3.zero;
+                    go.transform.localRotation = Quaternion.identity;
+                    go.transform.localScale = Vector3.one;
+
+                    var csr = go.GetComponent<SpriteRenderer>();
+                    if (csr == null) csr = go.AddComponent<SpriteRenderer>();
+                    csr.sprite = S("Cenario/Paralaxe/fundo_inferno_" + nome);
+                    csr.sortingLayerID = sr.sortingLayerID;
+                    csr.sortingOrder = ordem;
+
+                    var par = go.GetComponent<Paralaxe>();
+                    if (par == null) par = go.AddComponent<Paralaxe>();
+                    par.fatorX = fator;
+                    par.fatorY = fator;
+
+                    if (nome.StartsWith("lava")) Animar(go, animFundoLava); // cascatas e mar de lava se mexendo
+                }
+                Undo.RecordObject(sr, "Paralaxe");
+                sr.enabled = false; // o fundo único fica desligado (as camadas desenham tudo)
+            }
+        }
+
+        /// <summary>A crosta de lava em cima dos chãos brilha andando (troca de quadros).</summary>
+        static void AnimarCrostaDeLava()
+        {
+            foreach (var sr in Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (sr.gameObject.name == NomeVisual && sr.sprite != null && sr.sprite.name.StartsWith("tile_rocha"))
+                    Animar(sr.gameObject, animCrosta);
+        }
+
+        /// <summary>Brasas subindo na frente do fundo (componente Brasas na câmera das fases).</summary>
+        static void ColocarBrasas(System.Func<string, Sprite> S)
+        {
+            if (Object.FindObjectsByType<Player>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length == 0) return; // menu
+            foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (!cam.CompareTag("MainCamera")) continue;
+                var b = cam.GetComponent<Brasas>();
+                if (b == null) b = Undo.AddComponent<Brasas>(cam.gameObject);
+                Undo.RecordObject(b, "Brasas");
+                b.quadros = new[] { S("Cenario/brasa_0"), S("Cenario/brasa_1") };
+            }
+        }
+
         static void AnimarPlayer(System.Func<string, Sprite> S)
         {
             const string pasta = "Personagens/Animacao/";

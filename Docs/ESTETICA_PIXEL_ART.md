@@ -25,10 +25,12 @@ Assets/
 │   ├── Sprites/
 │   │   ├── Personagens/         agenor.png (o player) + Animacao/ (quadros parado, andando e pulo)
 │   │   ├── Inimigos/            demonio_coracao_0/1.png (2 quadros de animação)
-│   │   ├── Cenario/             tile_rocha, plataforma_dissolvivel, espinho, estalagmite, fundo_inferno
+│   │   ├── Cenario/             tile_rocha, plataforma_dissolvivel, espinho, estalagmite, fundo_inferno, brasa
+│   │   │   ├── Paralaxe/        camadas do fundo (céu, pilares, montanhas, lava 0-3, teto)
+│   │   │   └── Animacao/        quadros da crosta de lava do chão (tile_rocha_1..3)
 │   │   ├── Objetos/             trofeu_0..3.png (brilho animado)
 │   │   └── UI/                  botao (+ _hover e _press), painel, faixa_titulo, fundo_menu
-│   ├── Animacoes/               Demonio (asas batendo) e Trofeu (brilho) — clips + controllers
+│   ├── Animacoes/               Demonio, Trofeu, CrostaLava e FundoLava — clips + controllers
 │   ├── Fontes/                  PixelInferno.ttf + PixelInferno SDF (TextMeshPro) + materiais
 ├── Audio/Resources/Sons/        efeitos sonoros (.wav) gerados por código
 │   └── _Antigos/                sprites antigos (não usados mais, guardados por segurança)
@@ -88,6 +90,30 @@ Também mudou:
   (só imagem, não recebe clique).
 - No game over, o painel passou a ser desenhado antes do título (ordem na hierarquia), porque o fundo
   semitransparente dele estava apagando o texto.
+
+## Cenário vivo: paralaxe, lava e brasas
+O fundo deixou de ser uma imagem só. Agora são **5 camadas**, filhas do objeto `BackgroundPrincipal`
+("Camada ceu/pilares/montanhas/lava/teto (pixel art)"). Cada uma anda numa velocidade diferente quando a câmera se
+move, o que dá sensação de profundidade:
+
+| Camada | Fator de paralaxe | O que tem |
+|---|---|---|
+| céu | 0,9 (bem longe) | degradê e névoa quente |
+| pilares | 0,7 | pilares de rocha e montanhas distantes |
+| montanhas | 0,5 | montanhas mais perto |
+| lava | 0,5 | cascatas escorrendo e mar de lava ondulando (**animada**, 4 quadros) |
+| teto | 0,3 (mais perto) | estalactites |
+
+- **Fator** = quanto do movimento da câmera a camada acompanha (0 = parada no mundo, 1 = presa na câmera).
+  Quem faz isso é o script `Assets/Scripts/Paralaxe.cs`; dá para ajustar os fatores no Inspector de cada camada.
+- **Crosta de lava do chão:** todos os chãos têm o brilho da lava andando (4 quadros, animação `CrostaLava`).
+- **Brasas:** o script `Assets/Scripts/Brasas.cs`, na câmera das fases, cria 28 brasinhas que sobem balançando e
+  piscando na frente do fundo (e atrás do chão e dos personagens). Elas não têm colisão.
+- As camadas, a lava e as brasas são só visuais. A comparação das cenas confirmou que posições, colisores, tags e
+  valores dos scripts de jogo não mudaram.
+- O `fundo_inferno.png` antigo continua no objeto, só que desligado.
+
+> As capturas desta página são tiradas sem dar Play, então a paralaxe, a lava e as brasas não aparecem nelas.
 
 ## Animação do player
 O Agenor tem 7 quadros em `Assets/Art/Sprites/Personagens/Animacao/` (gerados a partir do desenho base pelo

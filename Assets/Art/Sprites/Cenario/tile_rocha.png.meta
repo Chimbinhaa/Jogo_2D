@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      tile_rocha_0: 3833970444593802789
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
