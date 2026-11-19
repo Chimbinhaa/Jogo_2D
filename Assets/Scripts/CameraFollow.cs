@@ -7,6 +7,17 @@ public class CameraFollow : MonoBehaviour
     public bool movimentoSuave = true;
     public float velocidade = 5f;
 
-
+    private void LateUpdate()
+    {
+        Vector3 posicaoDesejada = alvo.position + distancia;
+        if (movimentoSuave)
+        {
+            transform.position = Vector3.Lerp(transform.position, posicaoDesejada, velocidade * Time.deltaTime);
+        }
+        else
+        {
+            transform.position = posicaoDesejada;
+        }
+    }
 
 }

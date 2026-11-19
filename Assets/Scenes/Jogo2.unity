@@ -933,8 +933,7 @@ Transform:
   m_LocalPosition: {x: -3.5, y: -1.4, z: 2.68}
   m_LocalScale: {x: 1.553311, y: 1.4662521, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 998394430}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &331281876
@@ -2429,6 +2428,7 @@ GameObject:
   - component: {fileID: 998394432}
   - component: {fileID: 998394431}
   - component: {fileID: 998394434}
+  - component: {fileID: 998394435}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2445,11 +2445,11 @@ Transform:
   m_GameObject: {fileID: 998394429}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.05, y: 0.27, z: -12.68}
-  m_LocalScale: {x: 0.91637295, y: 1.0737699, z: 1}
+  m_LocalPosition: {x: -3.4223344, y: -1.0041119, z: -10}
+  m_LocalScale: {x: 1.4234122, y: 1.5744174, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 331281875}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &998394431
 MonoBehaviour:
@@ -2572,6 +2572,22 @@ MonoBehaviour:
   quantidade: 28
   velocidadeSubida: 0.9
   ordemDesenho: -50
+--- !u!114 &998394435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 998394429}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ce3ce5fc29cccb4196c9e60db1de5d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  alvo: {fileID: 331281875}
+  distancia: {x: 0, y: 1, z: -10}
+  movimentoSuave: 1
+  velocidade: 5
 --- !u!1 &1066475297
 GameObject:
   m_ObjectHideFlags: 0
@@ -5958,6 +5974,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 998394430}
   - {fileID: 331281875}
   - {fileID: 87663635}
   - {fileID: 1408368374}
