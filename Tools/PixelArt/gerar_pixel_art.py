@@ -288,8 +288,8 @@ def agenor_linhas():
     return L
 
 
-def agenor():
-    linhas = agenor_linhas()
+def agenor(linhas=None):
+    linhas = linhas or agenor_linhas()
     assert len(linhas) == 36 and all(len(l) == 18 for l in linhas)
     img = Image.new("RGBA", (18, 36), T)
     for y, l in enumerate(linhas):
@@ -297,6 +297,56 @@ def agenor():
             if AGENOR_CORES[ch]:
                 img.putpixel((x, y), PAL[AGENOR_CORES[ch]])
     return img
+
+
+# Quadros de animacao: saem do desenho base mexendo em linhas inteiras.
+# Linhas do desenho: 0-12 cabeca | 13-21 tronco | 22-27 maos e cueca | 28-33 pernas | 34-35 pes
+VAZIA = "." * 18
+
+
+def _respirar(L):
+    """Peito 'murcha' 1 pixel: tira uma linha do tronco e desce a parte de cima."""
+    L = list(L)
+    del L[18]
+    return [VAZIA] + L
+
+
+def _levantar_pernas(L, esquerda, direita, px=2):
+    """Encolhe a perna (pe sobe 'px' pixels). Esquerda = colunas 0-8, direita = 9-17."""
+    L = list(L)
+    for lado, ativo in ((slice(0, 9), esquerda), (slice(9, 18), direita)):
+        if not ativo:
+            continue
+        metade = [l[lado] for l in L[28:36]]
+        metade = metade[:2] + metade[2 + px:] + ["." * len(metade[0])] * px
+        for i, m in enumerate(metade):
+            l = L[28 + i]
+            L[28 + i] = l[:lado.start] + m + l[lado.stop:]
+    return L
+
+
+def _bracos_para_cima(L):
+    """Maos sobem 1 pixel (pose de pulo)."""
+    L = list(L)
+    for y in (21, 22, 23):
+        abaixo = L[y + 1]
+        L[y] = abaixo[:5] + L[y][5:13] + abaixo[13:]
+    L[24] = ".oooo" + L[24][5:13] + "oooo."
+    return L
+
+
+def agenor_quadros():
+    """Retorna {nome_do_arquivo: imagem} com todos os quadros do player."""
+    base = agenor_linhas()
+    return {
+        "agenor_parado_0": agenor(base),
+        "agenor_parado_1": agenor(_respirar(base)),
+        "agenor_andando_0": agenor(_levantar_pernas(base, True, False)),
+        "agenor_andando_1": agenor(base),
+        "agenor_andando_2": agenor(_levantar_pernas(base, False, True)),
+        "agenor_andando_3": agenor(_respirar(base)),
+        "agenor_pulo": agenor(_bracos_para_cima(_levantar_pernas(base, True, True, 3))),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1122,6 +1172,8 @@ def main():
     print("Gerando pixel art em", ART)
     imgs = {}
     imgs["agenor"] = salvar(agenor(), "Sprites", "Personagens", "agenor.png")
+    for nome, img in agenor_quadros().items():
+        imgs[nome] = salvar(img, "Sprites", "Personagens", "Animacao", nome + ".png")
     for q in (0, 1):
         imgs[f"demonio{q}"] = salvar(demonio(q), "Sprites", "Inimigos", f"demonio_coracao_{q}.png")
     imgs["espinho"] = salvar(espinho(), "Sprites", "Cenario", "espinho.png")

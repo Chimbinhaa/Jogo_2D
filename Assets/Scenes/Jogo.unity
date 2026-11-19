@@ -280,7 +280,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.072}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -290,7 +290,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.85, y: 0.75}
   m_EdgeRadius: 0
 --- !u!212 &18485962
 SpriteRenderer:
@@ -3143,7 +3143,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.072}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -3153,7 +3153,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.85, y: 0.75}
   m_EdgeRadius: 0
 --- !u!212 &727619916
 SpriteRenderer:
@@ -4696,7 +4696,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.072}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -4706,7 +4706,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.85, y: 0.75}
   m_EdgeRadius: 0
 --- !u!212 &1202919629
 SpriteRenderer:
@@ -6364,9 +6364,9 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 0.5773587}
-      - {x: -0.50167745, y: -0.40507567}
-      - {x: 0.45474434, y: -0.3987078}
+    - - {x: 0, y: 0.33}
+      - {x: -0.58, y: -0.436}
+      - {x: 0.58, y: -0.436}
   m_UseDelaunayMesh: 0
 --- !u!50 &1632633220
 Rigidbody2D:
@@ -6530,9 +6530,9 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 0.5773587}
-      - {x: -0.5, y: -0.4175195}
-      - {x: 0.5, y: -0.39911184}
+    - - {x: 0, y: 0.33}
+      - {x: -0.58, y: -0.436}
+      - {x: 0.58, y: -0.436}
   m_UseDelaunayMesh: 0
 --- !u!50 &1681835434
 Rigidbody2D:
@@ -6644,6 +6644,7 @@ GameObject:
   - component: {fileID: 1684136493}
   - component: {fileID: 1684136492}
   - component: {fileID: 1684136496}
+  - component: {fileID: 1684136497}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -6700,7 +6701,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.010560751, y: 0.033127636}
+  m_Offset: {x: 0, y: -0.040832996}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -6710,7 +6711,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.9788785, y: 1.597537}
+  m_Size: {x: 0.5716619, y: 1.3883218}
   m_EdgeRadius: 0
 --- !u!212 &1684136494
 SpriteRenderer:
@@ -6810,6 +6811,29 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &1684136497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1684136491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a88a7b03d5df804ca939c3e69b17dce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  parado:
+  - {fileID: 21300000, guid: 87390020dca685349b35e96331d1a653, type: 3}
+  - {fileID: 21300000, guid: 6808b97ea13c49b4f995061912a76a16, type: 3}
+  andando:
+  - {fileID: 21300000, guid: 8bc62b19b6dedc140b4396febf002fa1, type: 3}
+  - {fileID: 21300000, guid: b84650b8610cbec48a632f8a435a9725, type: 3}
+  - {fileID: 21300000, guid: f30896b8e4aa97649ab4018d09050792, type: 3}
+  - {fileID: 21300000, guid: ec5bac246bf393a49b70fb6fd76f5526, type: 3}
+  pulo: {fileID: 21300000, guid: 5067e7d8e796f31409f69abe496210ce, type: 3}
+  fpsParado: 2
+  fpsAndando: 10
 --- !u!1 &1729287993
 GameObject:
   m_ObjectHideFlags: 0
@@ -7025,9 +7049,9 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: -0.059628535, y: 0.4824267}
-      - {x: -0.47571534, y: -0.3306517}
-      - {x: 0.48924357, y: -0.33267343}
+    - - {x: 0, y: 0.4}
+      - {x: -0.55, y: -0.33}
+      - {x: 0.55, y: -0.33}
   m_UseDelaunayMesh: 0
 --- !u!50 &1748180414
 Rigidbody2D:
@@ -7474,9 +7498,9 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 0.5773587}
-      - {x: -0.5204721, y: -0.41066048}
-      - {x: 0.466716, y: -0.43378687}
+    - - {x: 0, y: 0.33}
+      - {x: -0.58, y: -0.436}
+      - {x: 0.58, y: -0.436}
   m_UseDelaunayMesh: 0
 --- !u!50 &1860773741
 Rigidbody2D:
@@ -7777,9 +7801,9 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 0.5773587}
-      - {x: -0.5789043, y: -0.45433444}
-      - {x: 0.5789052, y: -0.45433465}
+    - - {x: 0, y: 0.33}
+      - {x: -0.58, y: -0.436}
+      - {x: 0.58, y: -0.436}
   m_UseDelaunayMesh: 0
 --- !u!1 &1944450570
 GameObject:
@@ -8388,9 +8412,9 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: -0.059628535, y: 0.4824267}
-      - {x: -0.5809262, y: -0.3327172}
-      - {x: 0.5477622, y: -0.33463687}
+    - - {x: 0, y: 0.4}
+      - {x: -0.55, y: -0.33}
+      - {x: 0.55, y: -0.33}
   m_UseDelaunayMesh: 0
 --- !u!50 &2080299160
 Rigidbody2D:

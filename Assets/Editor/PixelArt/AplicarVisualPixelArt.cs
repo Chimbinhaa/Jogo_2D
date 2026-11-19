@@ -130,6 +130,9 @@ namespace PixelArt
                 }
             }
 
+            AnimarPlayer(S);
+            AjustarHitboxes();
+
             // Cor de fundo da câmera combinando com o topo do cenário
             foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
@@ -276,6 +279,82 @@ namespace PixelArt
                 txt.fontSize -= 8;
             }
             Debug.Log($"[PixelArt] Texto '{txt.text}' -> tamanho {txt.fontSize} (caixa {rect.width:0}x{rect.height:0}, limite {limite:0})");
+        }
+
+        /// <summary>Coloca o PlayerAnimacao no player com os quadros desenhados.</summary>
+        static void AnimarPlayer(System.Func<string, Sprite> S)
+        {
+            const string pasta = "Personagens/Animacao/";
+            foreach (var p in Object.FindObjectsByType<Player>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var anim = p.GetComponent<PlayerAnimacao>();
+                if (anim == null) anim = Undo.AddComponent<PlayerAnimacao>(p.gameObject);
+                Undo.RecordObject(anim, "Pixel Art");
+                anim.parado = new[] { S(pasta + "agenor_parado_0"), S(pasta + "agenor_parado_1") };
+                anim.andando = new[]
+                {
+                    S(pasta + "agenor_andando_0"), S(pasta + "agenor_andando_1"),
+                    S(pasta + "agenor_andando_2"), S(pasta + "agenor_andando_3"),
+                };
+                anim.pulo = S(pasta + "agenor_pulo");
+            }
+        }
+
+        /// <summary>
+        /// Deixa as caixas de colisão do tamanho do que aparece na tela.
+        /// Antes elas eram maiores que os desenhos (o player morria sem encostar no espinho).
+        /// Os valores são em unidades locais do sprite (antes da escala do objeto).
+        /// </summary>
+        static void AjustarHitboxes()
+        {
+            // Player: sprite de 18x36 px (PPU 24.49). Caixa = corpo de 14x34 px, com o pé
+            // exatamente na base do desenho (antes a caixa era 1,3x mais larga e passava da cabeça).
+            const float ppuAgenor = 24.49f;
+            foreach (var p in Object.FindObjectsByType<Player>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var box = p.GetComponent<BoxCollider2D>();
+                if (box == null) continue;
+                Undo.RecordObject(box, "Hitbox");
+                box.size = new Vector2(14f / ppuAgenor, 34f / ppuAgenor);
+                box.offset = new Vector2(0f, -18f / ppuAgenor + box.size.y / 2f);
+            }
+
+            foreach (var sr in Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (sr.sprite == null) continue;
+                var go = sr.gameObject;
+
+                // Espinhos: triângulo um pouco menor que o desenho (a pontinha brilhante não mata).
+                // Antes a ponta do colisor ficava acima da ponta do desenho.
+                var poli = go.GetComponent<PolygonCollider2D>();
+                if (poli != null && go.CompareTag("Dano Espinho"))
+                {
+                    Vector2[] pontos = null;
+                    if (sr.sprite.name == "espinho")          // 22x14 px -> 1.37 x 0.87
+                        pontos = new[] { new Vector2(0f, 0.33f), new Vector2(-0.58f, -0.436f), new Vector2(0.58f, -0.436f) };
+                    else if (sr.sprite.name == "estalagmite") // 228x142 px -> 1.37 x 0.85
+                        pontos = new[] { new Vector2(0f, 0.40f), new Vector2(-0.55f, -0.33f), new Vector2(0.55f, -0.33f) };
+                    if (pontos != null)
+                    {
+                        Undo.RecordObject(poli, "Hitbox");
+                        poli.pathCount = 1;
+                        poli.SetPath(0, pontos);
+                        poli.offset = Vector2.zero;
+                    }
+                }
+
+                // Inimigos: caixa do corpo do demônio (sprite 21x14 px), pé na base do desenho
+                if (go.CompareTag("Inimigo"))
+                {
+                    var box = go.GetComponent<BoxCollider2D>();
+                    if (box != null)
+                    {
+                        Undo.RecordObject(box, "Hitbox");
+                        box.size = new Vector2(0.85f, 0.75f);
+                        box.offset = new Vector2(0f, -0.447f + 0.375f);
+                    }
+                }
+            }
         }
 
         /// <summary>Cria (ou atualiza) a faixa decorativa atrás de um título.</summary>

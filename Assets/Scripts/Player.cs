@@ -13,7 +13,7 @@ public class Player : MonoBehaviour
     // Usar uma lista (em vez de true/false) evita o bug de perder o pulo
     // quando o player está encostado em dois blocos de chão ao mesmo tempo.
     private readonly HashSet<Collider2D> chaosTocando = new HashSet<Collider2D>();
-    private bool IsGrounded => chaosTocando.Count > 0;
+    public bool IsGrounded => chaosTocando.Count > 0; // público para a animação saber se está no chão
 
     void Start()
     {
@@ -33,6 +33,7 @@ public class Player : MonoBehaviour
             // Zera a velocidade vertical antes do pulo para ele ter sempre a mesma altura
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
             rb.AddForce(new Vector2(0f, forcaPulo), ForceMode2D.Impulse);
+            Sons.Tocar("pulo");
         }
     }
 
@@ -40,6 +41,8 @@ public class Player : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Ground") && TocandoPorCima(collision))
         {
+            // Som de pouso só quando estava no ar e caiu com alguma velocidade
+            if (!IsGrounded && collision.relativeVelocity.y > 2f) Sons.Tocar("aterrissar", 0.6f);
             chaosTocando.Add(collision.collider);
         }
 

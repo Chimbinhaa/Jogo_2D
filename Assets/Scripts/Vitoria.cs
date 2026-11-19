@@ -9,6 +9,7 @@ public class Vitoria : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            Sons.Tocar("fase");
             SceneManager.LoadScene(proximaFase);
         }
     }

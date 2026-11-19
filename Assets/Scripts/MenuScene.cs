@@ -38,6 +38,7 @@ public class MenuScene : MonoBehaviour
         if (jogoAcabou == false && Time.timeScale > 0f)
         {
             pausado = true;
+            Sons.Tocar("pause");
             painelPause.SetActive(true);
             Time.timeScale = 0f;
         }
@@ -54,6 +55,7 @@ public class MenuScene : MonoBehaviour
     {
         if (jogoAcabou) return; // evita chamar duas vezes (ex.: tocou espinho e inimigo juntos)
         jogoAcabou = true;
+        Sons.Tocar("morte");
         pausado = false;
         painelPause.SetActive(false);
         painelGameOver.SetActive(true);

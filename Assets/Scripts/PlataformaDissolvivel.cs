@@ -40,6 +40,7 @@ public class PlataformaDissolvivel : MonoBehaviour
         }
 
         // Desaparece
+        Sons.Tocar("plataforma");
         sprite.enabled = false;
         GetComponent<Collider2D>().enabled = false;
 

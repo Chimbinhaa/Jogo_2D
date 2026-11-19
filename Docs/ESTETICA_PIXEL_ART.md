@@ -23,19 +23,21 @@ scripts do jogo (`Assets/Scripts`) continuam exatamente iguais. Só mudou o que 
 Assets/
 ├── Art/                         ← TODA a arte do jogo
 │   ├── Sprites/
-│   │   ├── Personagens/         agenor.png (o player)
+│   │   ├── Personagens/         agenor.png (o player) + Animacao/ (quadros parado, andando e pulo)
 │   │   ├── Inimigos/            demonio_coracao_0/1.png (2 quadros de animação)
 │   │   ├── Cenario/             tile_rocha, plataforma_dissolvivel, espinho, estalagmite, fundo_inferno
 │   │   ├── Objetos/             trofeu_0..3.png (brilho animado)
 │   │   └── UI/                  botao (+ _hover e _press), painel, faixa_titulo, fundo_menu
 │   ├── Animacoes/               Demonio (asas batendo) e Trofeu (brilho) — clips + controllers
 │   ├── Fontes/                  PixelInferno.ttf + PixelInferno SDF (TextMeshPro) + materiais
+├── Audio/Resources/Sons/        efeitos sonoros (.wav) gerados por código
 │   └── _Antigos/                sprites antigos (não usados mais, guardados por segurança)
 ├── Editor/PixelArt/             ferramentas de Editor (não vão para o jogo final)
 │   ├── PixelArtImporter.cs      configura imagens novas como pixel art automaticamente
 │   └── AplicarVisualPixelArt.cs aplica o visual nas cenas + tira as capturas
 ├── Scenes/  Scripts/  Settings/ (sem mudanças nos scripts)
 Tools/PixelArt/gerar_pixel_art.py ← gera TODOS os PNGs e a fonte
+Tools/Audio/gerar_sons.py         ← gera TODOS os efeitos sonoros
 Docs/                              ← esta documentação, preview e capturas
 ```
 
@@ -87,8 +89,57 @@ Também mudou:
 - No game over, o painel passou a ser desenhado antes do título (ordem na hierarquia), porque o fundo
   semitransparente dele estava apagando o texto.
 
-### O que NÃO mudou (conferido)
-Foram comparadas as cenas antes e depois, componente por componente. Continuam idênticos:
+## Animação do player
+O Agenor tem 7 quadros em `Assets/Art/Sprites/Personagens/Animacao/` (gerados a partir do desenho base pelo
+`gerar_pixel_art.py`, função `agenor_quadros()`):
+
+| Estado | Quadros | Velocidade |
+|---|---|---|
+| Parado | `agenor_parado_0/1` (respirando: o peito "murcha" 1 pixel) | 2 quadros/s |
+| Andando | `agenor_andando_0..3` (levanta um pé, depois o outro) | 10 quadros/s |
+| No ar | `agenor_pulo` (pernas encolhidas, mãos para cima) | — |
+
+Quem troca os quadros é o script `Assets/Scripts/PlayerAnimacao.cs`, que está no objeto **Player**. Ele olha a
+velocidade do Rigidbody e se o player está no chão (`Player.IsGrounded`, que virou público só para isso) e também
+vira o desenho para o lado em que ele anda. Ele não mexe na física nem nos controles.
+
+## Efeitos sonoros
+Todos os sons são gerados por código, no estilo 8 bits, pelo `Tools/Audio/gerar_sons.py` (só Python puro, sem
+programa de áudio). Para mudar um som, edite a função dele no script e rode `python Tools/Audio/gerar_sons.py`.
+
+| Som | Quando toca | Onde é chamado |
+|---|---|---|
+| `pulo` | ao pular | `Player.cs` |
+| `aterrissar` | ao cair no chão vindo de um pulo/queda | `Player.cs` |
+| `morte` | ao morrer (espinho, inimigo ou queda) | `MenuScene.MostrarGameOver` |
+| `plataforma` | quando a plataforma que pisca desmorona | `PlataformaDissolvivel.cs` |
+| `fase` | ao pegar o troféu da fase 1 | `Vitoria.cs` |
+| `vitoria` | ao pegar o troféu da fase 2 | `TelaVitoria.cs` |
+| `pause` | ao pausar com ESC | `MenuScene.Pausar` |
+| `clique` | em **qualquer** botão | automático |
+
+O script `Assets/Scripts/Sons.cs` se cria sozinho quando o jogo abre (não precisa colocar em nenhuma cena), carrega
+os `.wav` da pasta `Audio/Resources/Sons` e continua vivo ao trocar de cena, então o som não corta quando a fase
+recarrega. Para tocar um som em outro script: `Sons.Tocar("nome_do_arquivo");`. O volume geral fica em `Sons.volume`.
+
+## Hitboxes (caixas de colisão)
+O player morria "sem encostar" porque as caixas de colisão eram maiores que os desenhos:
+
+![Hitboxes antigas (vermelho) e novas (verde)](hitboxes.png)
+
+| Objeto | Antes | Agora |
+|---|---|---|
+| Player | caixa 1,3× mais larga que o corpo e passando da cabeça | caixa do corpo (14×34 px do desenho), pé na base do desenho |
+| Espinho pequeno | ponta do triângulo bem acima da ponta do desenho | triângulo um pouco menor que o desenho (a pontinha brilhante não mata) |
+| Estalagmite (espinho grande) | ponta ~0,5 unidade acima do desenho | ponta logo abaixo da ponta do desenho |
+| Demônio-coração | caixa mais alta que o desenho | caixa do corpo, pé na base do desenho |
+
+Os valores ficam em `AjustarHitboxes()` dentro do `AplicarVisualPixelArt.cs` e são aplicados pelo mesmo menu
+`Ferramentas > Pixel Art > Aplicar visual nas cenas`.
+
+### O que NÃO mudou na parte visual (conferido)
+Na reforma visual, as cenas foram comparadas antes e depois, componente por componente. Continuaram idênticos
+(as únicas mudanças de jogo depois disso são as hitboxes acima e as chamadas de som nos scripts):
 - todos os Transforms (posição, rotação e escala);
 - todos os colisores (`BoxCollider2D` e `PolygonCollider2D`) e Rigidbodies;
 - as tags;

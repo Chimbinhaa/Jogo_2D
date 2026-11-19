@@ -24,6 +24,9 @@ namespace PixelArt
 
         static Config ConfigPara(string arquivo)
         {
+            // Quadros de animação do player: mesmo tamanho do agenor.png
+            if (arquivo.StartsWith("agenor_")) arquivo = "agenor";
+
             switch (arquivo)
             {
                 case "agenor":                 return new Config(24.49f);         // 18x36 px -> 0.73 x 1.47

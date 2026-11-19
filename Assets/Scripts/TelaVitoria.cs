@@ -6,6 +6,7 @@ public class TelaVitoria : MonoBehaviour
 
     public void MostrarVitoria()
     {
+        Sons.Tocar("vitoria");
         telaVitoria.SetActive(true);
         Time.timeScale = 0f;
     }
