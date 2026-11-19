@@ -29,7 +29,7 @@ public class PlataformaDissolvivel : MonoBehaviour
 
         float tempo = 0;
 
-        // Plataforma começa a piscar
+        // Plataforma comeÃ§a a piscar
         while (tempo < tempoParaSumir)
         {
             sprite.enabled = !sprite.enabled;

@@ -33,7 +33,9 @@ public class MenuScene : MonoBehaviour
 
     public void Pausar()
     {
-        if (jogoAcabou == false)
+        // Não pausa se o jogo acabou ou se outra tela (ex.: vitória) já parou o tempo.
+        // Sem isso, apertar ESC na tela de vitória e depois "Continuar" voltava o jogo a rodar por trás.
+        if (jogoAcabou == false && Time.timeScale > 0f)
         {
             pausado = true;
             painelPause.SetActive(true);
@@ -50,7 +52,10 @@ public class MenuScene : MonoBehaviour
 
     public void MostrarGameOver()
     {
+        if (jogoAcabou) return; // evita chamar duas vezes (ex.: tocou espinho e inimigo juntos)
         jogoAcabou = true;
+        pausado = false;
+        painelPause.SetActive(false);
         painelGameOver.SetActive(true);
         Time.timeScale = 0f;
     }
