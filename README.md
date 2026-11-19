@@ -1,6 +1,8 @@
 # Jogo_2D
 Jogo para treinar versionamento de código com Git.
 
+📄 Documentação: [Estética em pixel art](Docs/ESTETICA_PIXEL_ART.md) · [Análise e próximos passos](PROXIMOS_PASSOS.md)
+
 25/08 - Aprendi a usar os comandos e o Github, como por exemplo pull, commit, branch, repositórios e etc. Comecei um projeto na unity de um jogo plataforma 2D usando o Git. Adicionei um player (triangulo), um objeto quadrado (square) e adicionei um chão. Fizemos também uma branch pra testes no git e usamos merge para mesclar na main.
 
 27/08 - Na aula de hoje aprendemos mais sobre Game Desing e UI, principalmente sobre mecânicas básicas, vi um vídeo sobre tais mecânicas aplicadas de diversas formas em jogos diferentes para compreendermos mais como elas funcionam e são usadas em jogos reais/famosos, e iremos começar a fazer o GDD (Game Desing Document) para nosso jogo manualmente no papel.

@@ -1,0 +1,1126 @@
+"""
+Gerador da arte em pixel art do jogo "7 Hell's".
+
+Todos os sprites, o fundo, a interface (UI) e a fonte pixelada sao gerados
+por este script, a partir de formas simples + uma paleta fixa. Assim a arte
+fica toda com o mesmo estilo e pode ser refeita/ajustada facilmente.
+
+Como usar (na pasta raiz do projeto):
+    python Tools/PixelArt/gerar_pixel_art.py
+
+Depois abra a Unity: ela reimporta os PNGs automaticamente.
+Requer: Python 3 + Pillow (pip install pillow).
+"""
+
+import math
+import os
+import random
+import struct
+
+from PIL import Image
+
+RAIZ = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ART = os.path.join(RAIZ, "Assets", "Art")
+DOCS = os.path.join(RAIZ, "Docs")
+
+# ---------------------------------------------------------------------------
+# PALETA (todas as cores do jogo saem daqui)
+# ---------------------------------------------------------------------------
+T = (0, 0, 0, 0)  # transparente
+
+
+def c(hexa, a=255):
+    hexa = hexa.lstrip("#")
+    return (int(hexa[0:2], 16), int(hexa[2:4], 16), int(hexa[4:6], 16), a)
+
+
+PAL = {
+    # contornos / sombras profundas
+    "preto": c("1a0a12"),
+    "noite": c("2d1020"),
+    "vinho": c("461626"),
+    # rocha vulcanica (basalto)
+    "rocha0": c("2a1a24"),
+    "rocha1": c("3e2834"),
+    "rocha2": c("574050"),
+    "rocha3": c("75586a"),
+    "rocha4": c("9a7c88"),
+    # lava / fogo
+    "lava0": c("6e1018"),
+    "lava1": c("b22418"),
+    "lava2": c("ec5c20"),
+    "lava3": c("ffa030"),
+    "lava4": c("ffe27a"),
+    # pele (Agenor)
+    "pele0": c("7a4030"),
+    "pele1": c("c47c58"),
+    "pele2": c("eab080"),
+    "pele3": c("ffd8a8"),
+    # coracao / demonio
+    "verm0": c("5c0c24"),
+    "verm1": c("a01838"),
+    "verm2": c("e0304c"),
+    "verm3": c("ff7486"),
+    # ouro (trofeu)
+    "ouro0": c("6a3c10"),
+    "ouro1": c("b07820"),
+    "ouro2": c("eab83a"),
+    "ouro3": c("fff0a0"),
+    # enxofre (plataforma que some)
+    "enx0": c("2c3410"),
+    "enx1": c("566a1c"),
+    "enx2": c("94ae30"),
+    "enx3": c("d4e46a"),
+    # claros
+    "branco": c("f6f0e6"),
+    "cinza": c("bcb4c0"),
+    "creme": c("f4e6c8"),
+}
+
+RAMPAS = {
+    "rocha": ["rocha0", "rocha1", "rocha2", "rocha3", "rocha4"],
+    "pele": ["pele0", "pele1", "pele2", "pele3"],
+    "verm": ["verm0", "verm1", "verm2", "verm3"],
+    "ouro": ["ouro0", "ouro1", "ouro2", "ouro3"],
+    "enx": ["enx0", "enx1", "enx2", "enx3"],
+    "branco": ["cinza", "cinza", "branco", "branco"],
+}
+
+
+# ---------------------------------------------------------------------------
+# Ferramentas de desenho
+# ---------------------------------------------------------------------------
+class Grade:
+    """Grade de 'materiais' (nomes de rampa). Depois vira imagem com sombra + contorno."""
+
+    def __init__(self, w, h):
+        self.w, self.h = w, h
+        self.m = [[None] * w for _ in range(h)]
+        self.detalhe = {}  # (x,y) -> cor fixa pintada por cima
+
+    def dentro(self, x, y):
+        return 0 <= x < self.w and 0 <= y < self.h
+
+    def ponto(self, x, y, mat):
+        if self.dentro(x, y):
+            self.m[y][x] = mat
+
+    def ret(self, x0, y0, x1, y1, mat):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                self.ponto(x, y, mat)
+
+    def elipse(self, cx, cy, rx, ry, mat):
+        for y in range(self.h):
+            for x in range(self.w):
+                if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1.0:
+                    self.ponto(x, y, mat)
+
+    def poligono(self, pts, mat):
+        for y in range(self.h):
+            for x in range(self.w):
+                if dentro_poligono(x + 0.5, y + 0.5, pts):
+                    self.ponto(x, y, mat)
+
+    def pintar(self, x, y, cor):
+        if self.dentro(x, y):
+            self.detalhe[(x, y)] = PAL[cor] if isinstance(cor, str) else cor
+
+    def imagem(self, contorno="preto", luz=(-1, -1)):
+        """Converte em imagem: sombreamento pela direcao da luz + contorno escuro."""
+        img = Image.new("RGBA", (self.w, self.h), T)
+        lx, ly = luz
+        for y in range(self.h):
+            for x in range(self.w):
+                mat = self.m[y][x]
+                if mat is None:
+                    continue
+                rampa = RAMPAS[mat]
+                n = len(rampa)
+                nivel = n - 2  # tom base
+
+                def vazio(dx, dy):
+                    xx, yy = x + dx, y + dy
+                    return not self.dentro(xx, yy) or self.m[yy][xx] != mat
+
+                if vazio(lx, 0) or vazio(0, ly):
+                    nivel = n - 1  # borda iluminada
+                if vazio(-lx, 0) or vazio(0, -ly):
+                    nivel = max(0, n - 3)  # borda na sombra
+                if vazio(-lx, 0) and vazio(0, -ly):
+                    nivel = max(0, n - 4)
+                img.putpixel((x, y), PAL[rampa[nivel]])
+        for (x, y), cor in self.detalhe.items():
+            img.putpixel((x, y), cor)
+        if contorno:
+            img = contornar(img, PAL[contorno])
+        return img
+
+
+def dentro_poligono(px, py, pts):
+    dentro = False
+    j = len(pts) - 1
+    for i in range(len(pts)):
+        xi, yi = pts[i]
+        xj, yj = pts[j]
+        if (yi > py) != (yj > py) and px < (xj - xi) * (py - yi) / (yj - yi + 1e-9) + xi:
+            dentro = not dentro
+        j = i
+    return dentro
+
+
+def contornar(img, cor):
+    """Pinta de 'cor' os pixels transparentes vizinhos (4 direcoes) de pixels opacos.
+    Os pixels da borda da imagem que ja sao opacos tambem viram contorno."""
+    w, h = img.size
+    src = img.copy()
+    px = src.load()
+    out = img.load()
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] == 0:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                xx, yy = x + dx, y + dy
+                if not (0 <= xx < w and 0 <= yy < h):
+                    out[x, y] = cor  # encostou na borda da imagem
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] != 0:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                xx, yy = x + dx, y + dy
+                if 0 <= xx < w and 0 <= yy < h and px[xx, yy][3] != 0:
+                    out[x, y] = cor
+                    break
+    return img
+
+
+def esticar_linhas(img, fx, fy, w_final=None, h_final=None):
+    """Amplia com 'nearest neighbor' (cada pixel vira um bloco). Usado quando o
+    objeto na cena tem escala nao uniforme: o sprite e 'pre-distorcido' para os
+    pixels aparecerem quadrados no jogo, sem mexer no Transform/colisor."""
+    w = w_final or img.width * fx
+    h = h_final or img.height * fy
+    return img.resize((w, h), Image.NEAREST)
+
+
+def salvar(img, *caminho):
+    p = os.path.join(ART, *caminho)
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    img.save(p)
+    print("  ok", os.path.relpath(p, RAIZ))
+    return img
+
+
+BAYER4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
+
+
+def dither(x, y, t):
+    """True se o pixel deve usar a cor 'seguinte' (dithering ordenado 4x4)."""
+    return t * 16 > BAYER4[y % 4][x % 4] + 0.5
+
+
+def gradiente(cores, t, x, y):
+    """Escolhe cor da lista (0..1) com dithering entre faixas."""
+    t = max(0.0, min(0.9999, t))
+    pos = t * (len(cores) - 1)
+    i = int(pos)
+    f = pos - i
+    if i + 1 < len(cores) and dither(x, y, f):
+        return cores[i + 1]
+    return cores[i]
+
+
+# ---------------------------------------------------------------------------
+# PERSONAGEM: Agenor (18x36, de frente)
+# ---------------------------------------------------------------------------
+def agenor():
+    g = Grade(18, 36)
+    # pernas e pes
+    g.ret(5, 26, 7, 32, "pele")
+    g.ret(10, 26, 12, 32, "pele")
+    g.ret(4, 33, 7, 34, "pele")
+    g.ret(10, 33, 13, 34, "pele")
+    # bracos
+    g.ret(1, 13, 3, 21, "pele")
+    g.ret(14, 13, 16, 21, "pele")
+    g.ret(1, 22, 3, 23, "pele")
+    g.ret(14, 22, 16, 23, "pele")
+    # tronco (ombros largos -> cintura)
+    g.poligono([(2, 11.5), (16, 11.5), (13.5, 22), (4.5, 22)], "pele")
+    # pescoco e cabeca
+    g.ret(7, 9, 10, 12, "pele")
+    g.elipse(9, 5.2, 4.2, 4.8, "pele")
+    # cueca branca
+    g.ret(5, 21, 12, 25, "branco")
+    img_base = g
+
+    # detalhes pintados por cima
+    d = g.pintar
+    # sobrancelhas bravas
+    for x, y in ((6, 4), (7, 4), (7, 5), (11, 4), (12, 4), (10, 5)):
+        d(x, y, "preto")
+    # olhos
+    d(6, 6, "branco"); d(7, 6, "preto")
+    d(12, 6, "branco"); d(10, 6, "preto")
+    d(11, 6, "branco")
+    d(8, 6, "pele2"); d(9, 6, "pele2")
+    # nariz e boca (cara fechada)
+    d(9, 7, "pele1")
+    d(8, 9, "pele0"); d(9, 9, "pele0"); d(10, 9, "pele0")
+    # brilho da careca
+    d(7, 1, "pele3"); d(8, 1, "pele3"); d(6, 2, "pele3")
+    # peitoral e abdomen
+    for x in range(5, 13):
+        if x not in (8, 9):
+            d(x, 15, "pele1")
+    d(8, 16, "pele1"); d(9, 16, "pele1")
+    for y in (17, 19):
+        d(7, y, "pele1"); d(10, y, "pele1")
+    for y in range(17, 21):
+        d(8, y, "pele1") if y % 2 else None
+    # separacao bracos / tronco
+    for y in range(13, 22):
+        d(3, y, "pele1"); d(14, y, "pele1")
+    # maos
+    d(1, 23, "pele1"); d(16, 23, "pele1")
+    # coracoes na cueca
+    for (hx, hy) in ((6, 22), (10, 23)):
+        d(hx, hy, "verm2"); d(hx + 2, hy, "verm2")
+        d(hx, hy + 1, "verm2"); d(hx + 1, hy + 1, "verm2"); d(hx + 2, hy + 1, "verm2")
+        d(hx + 1, hy + 2, "verm2")
+    # elastico da cueca
+    for x in range(5, 13):
+        d(x, 21, "cinza")
+    # separacao das pernas
+    for y in range(24, 26):
+        d(8, y, "cinza"); d(9, y, "cinza")
+    return img_base.imagem()
+
+
+# ---------------------------------------------------------------------------
+# INIMIGO: demonio-coracao com asinhas (21x14), 2 quadros
+# ---------------------------------------------------------------------------
+def demonio(quadro):
+    g = Grade(21, 14)
+    # coracao
+    g.elipse(7.5, 5.5, 3.6, 3.6, "verm")
+    g.elipse(13.5, 5.5, 3.6, 3.6, "verm")
+    g.poligono([(4.2, 6), (16.8, 6), (10.5, 13.2)], "verm")
+    # asinhas de morcego
+    if quadro == 0:
+        asa_e = [(4.5, 5), (0, 1), (1, 5), (0, 8), (4.5, 8)]
+        asa_d = [(16.5, 5), (21, 1), (20, 5), (21, 8), (16.5, 8)]
+    else:
+        asa_e = [(4.5, 6), (0, 9), (1, 6), (0, 4), (4.5, 5)]
+        asa_d = [(16.5, 6), (21, 9), (20, 6), (21, 4), (16.5, 5)]
+    g.poligono(asa_e, "rocha")
+    g.poligono(asa_d, "rocha")
+    img = g.imagem()
+    # chifres
+    for (x, y) in ((6, 1), (6, 0), (14, 1), (14, 0)):
+        img.putpixel((x, y), PAL["lava3"] if y == 0 else PAL["lava2"])
+    # olhos bravos
+    for (x, y, cor) in ((7, 5, "branco"), (8, 5, "branco"), (8, 6, "preto"),
+                        (12, 5, "branco"), (13, 5, "branco"), (12, 6, "preto"),
+                        (7, 4, "preto"), (13, 4, "preto"), (8, 4, "verm0"), (12, 4, "verm0")):
+        img.putpixel((x, y), PAL[cor])
+    # boca com presas
+    for x in range(8, 13):
+        img.putpixel((x, 9), PAL["preto"])
+    img.putpixel((9, 10), PAL["branco"])
+    img.putpixel((11, 10), PAL["branco"])
+    # brilho
+    img.putpixel((5, 3), PAL["verm3"])
+    img.putpixel((5, 4), PAL["verm3"])
+    return img
+
+
+# ---------------------------------------------------------------------------
+# ESPINHO (22x14) e ESTALAGMITE (espinho gigante)
+# ---------------------------------------------------------------------------
+def espinho():
+    g = Grade(22, 14)
+    g.poligono([(0, 14), (22, 14), (16, 7), (11.2, 0), (8, 5), (4, 8)], "rocha")
+    img = g.imagem()
+    # ponta incandescente
+    for (x, y, cor) in ((11, 1, "lava4"), (11, 2, "lava3"), (10, 3, "lava3"), (11, 3, "lava2"),
+                        (10, 4, "lava2"), (12, 4, "lava2")):
+        img.putpixel((x, y), PAL[cor])
+    # rachaduras de lava
+    for (x, y) in ((10, 8), (11, 9), (11, 10), (12, 11), (6, 11), (7, 12), (15, 10), (16, 11)):
+        img.putpixel((x, y), PAL["lava2"])
+    return img
+
+
+def estalagmite():
+    w, h = 38, 142
+    g = Grade(w, h)
+    rnd = random.Random(7)
+    pts = []
+    # lado esquerdo (de baixo pra cima) com recortes
+    passos = 14
+    for i in range(passos + 1):
+        t = i / passos
+        y = h - t * (h - 1)
+        x = (1 - t) * 0 + t * (w / 2 - 0.5)
+        x += rnd.uniform(0, 3) * (1 - t)
+        pts.append((x, y))
+    for i in range(passos, -1, -1):
+        t = i / passos
+        y = h - t * (h - 1)
+        x = (1 - t) * w + t * (w / 2 + 0.5)
+        x -= rnd.uniform(0, 3) * (1 - t)
+        pts.append((x, y))
+    g.poligono(pts, "rocha")
+    img = g.imagem()
+    # veio de lava subindo pelo meio
+    x = w // 2
+    for y in range(4, h - 2):
+        if y % 9 == 0:
+            x += rnd.choice((-1, 0, 1))
+        if img.getpixel((x, y))[3] and img.getpixel((x, y)) != PAL["preto"]:
+            cor = "lava4" if y < 10 else ("lava3" if y % 5 else "lava2")
+            img.putpixel((x, y), PAL[cor])
+    # rachaduras laterais
+    for _ in range(26):
+        y0 = rnd.randint(30, h - 4)
+        x0 = rnd.randint(4, w - 5)
+        for k in range(rnd.randint(2, 4)):
+            xx, yy = x0 + k * rnd.choice((-1, 1)), y0 + k
+            if 0 <= xx < w and 0 <= yy < h:
+                p = img.getpixel((xx, yy))
+                if p[3] and p != PAL["preto"]:
+                    img.putpixel((xx, yy), PAL["lava1"] if k else PAL["lava2"])
+    return img
+
+
+# ---------------------------------------------------------------------------
+# CHAO / PAREDES: tile 16x16 com 9-slice (bordas fixas, miolo repete)
+# ---------------------------------------------------------------------------
+def tile_rocha():
+    img = Image.new("RGBA", (16, 16), PAL["rocha1"])
+    px = img.load()
+    rnd = random.Random(3)
+    # miolo: pedras irregulares
+    for y in range(16):
+        for x in range(16):
+            r = rnd.random()
+            px[x, y] = PAL["rocha2"] if r < 0.18 else (PAL["rocha0"] if r > 0.94 else PAL["rocha1"])
+    # juntas das pedras (padrao que repete sem emenda no miolo 10x9)
+    for x in range(3, 13):
+        px[x, 8] = PAL["rocha0"]
+    for y in range(4, 8):
+        px[7, y] = PAL["rocha0"]
+    for y in range(9, 13):
+        px[4, y] = PAL["rocha0"]
+        px[10, y] = PAL["rocha0"]
+    for (x, y) in ((8, 5), (8, 6), (5, 10), (11, 10), (11, 11)):
+        px[x, y] = PAL["rocha3"]
+    # crosta de lava no topo
+    for x in range(16):
+        px[x, 0] = PAL["preto"]
+        px[x, 1] = PAL["lava3"] if x % 5 else PAL["lava4"]
+        px[x, 2] = PAL["lava2"]
+        px[x, 3] = PAL["lava1"] if x % 3 else PAL["lava2"]
+    # pingos de lava
+    for (x, y) in ((2, 4), (9, 4), (13, 4), (13, 5)):
+        px[x, y] = PAL["lava1"]
+    # bordas laterais e inferior
+    for y in range(1, 16):
+        px[0, y] = PAL["preto"]
+        px[15, y] = PAL["preto"]
+        if y > 3:
+            px[1, y] = PAL["rocha3"]
+            px[14, y] = PAL["rocha0"]
+    for x in range(16):
+        px[x, 15] = PAL["preto"]
+        if 0 < x < 15:
+            px[x, 14] = PAL["rocha0"]
+    return img
+
+
+def plataforma_dissolvivel():
+    """Plataforma de enxofre rachada (200x16 'pixels de jogo'), depois esticada
+    para 200x200 porque o objeto na cena usa escala ~12.5 x 1."""
+    w, h = 200, 16
+    img = Image.new("RGBA", (w, h), T)
+    px = img.load()
+    rnd = random.Random(11)
+    for y in range(h):
+        for x in range(w):
+            r = rnd.random()
+            base = "enx1" if r < 0.6 else ("enx2" if r < 0.9 else "enx0")
+            px[x, y] = PAL[base]
+    for x in range(w):
+        px[x, 0] = PAL["preto"]
+        px[x, 1] = PAL["enx3"]
+        px[x, 2] = PAL["enx2"]
+        px[x, h - 1] = PAL["preto"]
+        px[x, h - 2] = PAL["enx0"]
+    # blocos separados por rachaduras
+    x = 0
+    while x < w:
+        x += rnd.randint(18, 30)
+        if x >= w - 3:
+            break
+        cx = x
+        for y in range(1, h - 1):
+            if y % 3 == 0:
+                cx += rnd.choice((-1, 0, 1))
+            if 0 <= cx < w:
+                px[cx, y] = PAL["preto"]
+            if 0 <= cx + 1 < w and y > 2:
+                px[cx + 1, y] = PAL["enx3"] if y % 4 == 0 else PAL["enx0"]
+    # bolhas de enxofre
+    for _ in range(40):
+        bx, by = rnd.randint(2, w - 3), rnd.randint(4, h - 4)
+        px[bx, by] = PAL["enx3"]
+    for y in range(h):
+        px[0, y] = PAL["preto"]
+        px[w - 1, y] = PAL["preto"]
+    return esticar_linhas(img, 1, 1, w_final=200, h_final=200)
+
+
+# ---------------------------------------------------------------------------
+# TROFEU (30x31), 4 quadros de brilho
+# ---------------------------------------------------------------------------
+def trofeu(quadro):
+    g = Grade(30, 31)
+    g.poligono([(6, 2), (24, 2), (22, 13), (18, 17), (12, 17), (8, 13)], "ouro")
+    g.ret(13, 17, 16, 22, "ouro")
+    g.ret(10, 22, 19, 24, "ouro")
+    g.ret(7, 25, 22, 29, "ouro")
+    # alcas
+    for cx in (4.5, 25.5):
+        g.elipse(cx, 7.5, 3.5, 4.5, "ouro")
+    img = g.imagem(luz=(-1, -1))
+    px = img.load()
+    # furo das alcas
+    for (cx, cy) in ((4.5, 7.5), (25.5, 7.5)):
+        for y in range(31):
+            for x in range(30):
+                if ((x + 0.5 - cx) / 1.6) ** 2 + ((y + 0.5 - cy) / 2.5) ** 2 <= 1:
+                    px[x, y] = T
+    img = contornar(img, PAL["preto"])
+    px = img.load()
+    # boca do trofeu (interior escuro)
+    for x in range(8, 22):
+        px[x, 3] = PAL["ouro0"]
+    for x in range(9, 21):
+        px[x, 4] = PAL["ouro1"]
+    # placa na base
+    for x in range(11, 19):
+        px[x, 27] = PAL["ouro1"]
+    # chama do inferno na taca
+    for (x, y, cor) in ((15, 8, "lava4"), (14, 9, "lava3"), (15, 9, "lava4"), (16, 9, "lava3"),
+                        (14, 10, "lava2"), (15, 10, "lava3"), (16, 10, "lava2"), (15, 7, "lava3")):
+        px[x, y] = PAL[cor]
+    # brilho que passa (animacao)
+    if quadro > 0:
+        offs = {1: 6, 2: 13, 3: 20}[quadro]
+        for y in range(2, 30):
+            for k in (0, 1):
+                x = offs + k + (y - 2) // 3
+                if 0 <= x < 30 and px[x, y][3] and px[x, y] != PAL["preto"]:
+                    px[x, y] = PAL["ouro3"] if k == 0 else PAL["branco"]
+    return img
+
+
+# ---------------------------------------------------------------------------
+# FUNDO DO INFERNO (procedural, com dithering)
+# ---------------------------------------------------------------------------
+CEU = [PAL["noite"], PAL["vinho"], PAL["lava0"], PAL["lava1"], PAL["lava2"]]
+
+
+def silhueta(w, base, amplitude, rnd, rugosidade=0.55, passos=7):
+    """Linha de montanhas (deslocamento do ponto medio). Retorna altura por coluna."""
+    n = 2 ** passos + 1
+    alt = [0.0] * n
+    alt[0], alt[-1] = rnd.uniform(-1, 1), rnd.uniform(-1, 1)
+    step, amp = n - 1, 1.0
+    while step > 1:
+        half = step // 2
+        for i in range(half, n - 1, step):
+            alt[i] = (alt[i - half] + alt[i + half]) / 2 + rnd.uniform(-amp, amp)
+        step, amp = half, amp * rugosidade
+    return [base + amplitude * alt[int(x / (w - 1) * (n - 1))] for x in range(w)]
+
+
+def fundo_inferno(w, h, semente=5, sem_ceu=False):
+    rnd = random.Random(semente)
+    img = Image.new("RGBA", (w, h), PAL["noite"])
+    px = img.load()
+    # ceu: gradiente com dithering (escuro em cima -> brasa embaixo)
+    for y in range(h):
+        t = (y / h) ** 1.6
+        for x in range(w):
+            px[x, y] = gradiente(CEU, t * 0.95, x, y)
+    # faixas de nevoa quente (brilho de lava ao longe)
+    for _ in range(max(2, h // 70)):
+        cy = rnd.uniform(0.15, 0.75) * h
+        esp = rnd.uniform(0.03, 0.07) * h
+        for y in range(max(0, int(cy - esp)), min(h, int(cy + esp))):
+            t = 1 - abs(y - cy) / esp
+            for x in range(w):
+                ondula = (math.sin(x * 0.013 + cy) + math.sin(x * 0.037 + cy * 2)) * 0.35
+                if dither(x, y, t * (0.3 + ondula * 0.8)):
+                    px[x, y] = PAL["lava0"] if px[x, y] != PAL["lava1"] else PAL["lava2"]
+    # pilares de rocha da caverna (camada distante, do chao ao teto)
+    x = rnd.randint(0, 40)
+    while x < w:
+        larg = rnd.randint(14, 34)
+        fase = rnd.uniform(0, 6)
+        for y in range(h):
+            meia = larg / 2 * (0.75 + 0.25 * math.sin(y * 0.03 + fase)) + 3 * math.sin(y * 0.11 + fase)
+            for xx in range(int(x - meia), int(x + meia) + 1):
+                if 0 <= xx < w:
+                    borda = abs(xx - x) > meia - 1.5
+                    px[xx, y] = PAL["rocha1"] if borda and xx < x else (PAL["vinho"] if borda else PAL["rocha0"])
+            # rachaduras brilhando no pilar
+            if y % 23 == int(fase * 3) % 23:
+                for k in range(3):
+                    xx = int(x - meia / 2) + k
+                    if 0 <= xx < w and y + k < h:
+                        px[xx, y + k] = PAL["lava1"]
+        x += larg + rnd.randint(50, 130)
+    # camadas de montanhas (longe -> perto)
+    camadas = [
+        (0.58, 0.10, PAL["vinho"], PAL["lava1"]),
+        (0.70, 0.12, PAL["rocha1"], PAL["lava2"]),
+        (0.84, 0.10, PAL["rocha0"], PAL["lava3"]),
+    ]
+    for i, (base, amp, cor, borda) in enumerate(camadas):
+        linha = silhueta(w, base * h, amp * h, rnd, passos=8)
+        for x in range(w):
+            topo = int(linha[x])
+            for y in range(max(0, topo), h):
+                px[x, y] = cor
+            if 0 <= topo < h:
+                px[x, topo] = borda
+    # cascatas de lava
+    for _ in range(max(2, w // 220)):
+        x0 = rnd.randint(10, w - 10)
+        larg = rnd.randint(2, 3)
+        y_fim = int(h * rnd.uniform(0.72, 0.9))
+        for y in range(0, y_fim):
+            ondula = int(math.sin(y * 0.15 + x0) * 0.8)
+            # brilho em volta da cascata
+            for k in range(-3, larg + 3):
+                xx = x0 + k + ondula
+                if 0 <= xx < w and dither(xx, y, 0.35 - abs(k - larg / 2) * 0.08):
+                    px[xx, y] = PAL["lava0"]
+            for k in range(larg):
+                cor = PAL["lava2"] if k == larg // 2 else PAL["lava1"]
+                if (y + k) % 7 == 0:
+                    cor = PAL["lava3"]
+                xx = x0 + k + ondula
+                if 0 <= xx < w:
+                    px[xx, y] = cor
+    # mar de lava no fundo
+    nivel = int(h * 0.9)
+    for y in range(nivel, h):
+        for x in range(w):
+            onda = math.sin(x * 0.21 + y * 1.7 + math.sin(y * 3.1) * 2) + math.sin(x * 0.047 - y)
+            px[x, y] = PAL["lava3"] if onda > 1.2 else (PAL["lava2"] if onda > -0.9 else PAL["lava1"])
+    for x in range(w):
+        px[x, nivel] = PAL["lava4"]
+    # estalactites no teto
+    if not sem_ceu:
+        x = 0
+        while x < w:
+            larg = rnd.randint(3, 9)
+            comp = rnd.randint(int(h * 0.04), int(h * 0.16))
+            for y in range(comp):
+                meia = larg * (1 - y / comp) / 2
+                for xx in range(int(x + larg / 2 - meia), int(x + larg / 2 + meia) + 1):
+                    if 0 <= xx < w:
+                        px[xx, y] = PAL["rocha0"] if y < comp - 1 else PAL["rocha1"]
+            x += larg + rnd.randint(0, 6)
+        for x in range(w):
+            for y in range(0, int(h * 0.025)):
+                px[x, y] = PAL["preto"]
+    # brasas (pontinhos)
+    for _ in range(w * h // 1100):
+        x, y = rnd.randrange(w - 1), rnd.randrange(int(h * 0.1), nivel - 1)
+        cor = PAL["lava3"] if rnd.random() < 0.7 else PAL["lava4"]
+        px[x, y] = cor
+        if rnd.random() < 0.25:  # algumas brasas maiores
+            px[x + 1, y] = PAL["lava2"]
+            px[x, y + 1] = PAL["lava2"]
+    return img
+
+
+def fundo_menu():
+    w, h = 240, 135
+    img = fundo_inferno(w, h, semente=21)
+    px = img.load()
+    # brilho atras do titulo (circulo com dithering)
+    cx, cy, r = w / 2, h * 0.32, 52
+    for y in range(h):
+        for x in range(w):
+            d = math.hypot((x - cx) * 0.8, y - cy) / r
+            if d < 1 and dither(x, y, (1 - d) * 0.8):
+                atual = px[x, y]
+                px[x, y] = PAL["lava1"] if atual in (PAL["noite"], PAL["vinho"]) else atual
+    # chao de pedra na frente + Agenor de costas olhando o inferno
+    for y in range(int(h * 0.88), h):
+        for x in range(w):
+            px[x, y] = PAL["preto"] if y == int(h * 0.88) else (PAL["rocha1"] if (x // 6 + y) % 5 else PAL["rocha0"])
+    ag = agenor()
+    img.alpha_composite(ag, (int(w * 0.2), int(h * 0.88) - 35))
+    # vinheta escura nas bordas
+    for y in range(h):
+        for x in range(w):
+            d = max(abs(x - w / 2) / (w / 2), abs(y - h / 2) / (h / 2))
+            if d > 0.86 and dither(x, y, (d - 0.86) / 0.14):
+                px[x, y] = PAL["preto"]
+    return img
+
+
+# ---------------------------------------------------------------------------
+# UI: botao e painel (9-slice)
+# ---------------------------------------------------------------------------
+def botao():
+    w = h = 16
+    img = Image.new("RGBA", (w, h), PAL["vinho"])
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            if y < 7:
+                px[x, y] = PAL["verm1"]
+            elif y < 12:
+                px[x, y] = PAL["lava0"]
+            else:
+                px[x, y] = PAL["verm0"]
+    for x in range(w):
+        px[x, 1] = PAL["lava2"]
+        px[x, 2] = PAL["verm2"]
+        px[x, h - 3] = PAL["noite"]
+        px[x, h - 2] = PAL["noite"]
+    for y in range(h):
+        px[1, y] = PAL["lava2"] if y < h - 3 else PAL["noite"]
+        px[w - 2, y] = PAL["noite"]
+    for i in range(w):
+        px[i, 0] = PAL["preto"]
+        px[i, h - 1] = PAL["preto"]
+        px[0, i] = PAL["preto"]
+        px[w - 1, i] = PAL["preto"]
+    for (x, y) in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        px[x, y] = T
+    return img
+
+
+def painel():
+    w = h = 24
+    img = Image.new("RGBA", (w, h), T)
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            borda = min(x, y, w - 1 - x, h - 1 - y)
+            if borda == 0:
+                cor = PAL["preto"]
+            elif borda == 1:
+                cor = PAL["rocha3"] if (x < w // 2 and y < h // 2) else PAL["rocha2"]
+            elif borda in (2, 3):
+                cor = PAL["rocha1"] if (x + y) % 4 else PAL["rocha2"]
+            elif borda == 4:
+                cor = PAL["preto"]
+            elif borda == 5:
+                cor = PAL["lava1"]
+            else:
+                cor = c("1a0a12", 215)  # miolo escuro meio transparente
+            px[x, y] = cor
+    # rebites nos cantos
+    for (x, y) in ((2, 2), (w - 3, 2), (2, h - 3), (w - 3, h - 3)):
+        px[x, y] = PAL["lava3"]
+    for (x, y) in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        px[x, y] = T
+    return img
+
+
+# ---------------------------------------------------------------------------
+# FONTE PIXELADA (gera um arquivo .ttf de verdade, sem bibliotecas externas)
+# ---------------------------------------------------------------------------
+# Cada glifo: (linhas de cima pra baixo, linha de base da ultima linha)
+G = {}
+
+
+def glifo(ch, linhas, base=0):
+    G[ch] = ([l.replace(" ", ".") for l in linhas], base)
+
+
+# Maiusculas 5x7
+for ch, l in {
+    "A": [".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
+    "B": ["####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."],
+    "C": [".####", "#....", "#....", "#....", "#....", "#....", ".####"],
+    "D": ["####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####."],
+    "E": ["#####", "#....", "#....", "####.", "#....", "#....", "#####"],
+    "F": ["#####", "#....", "#....", "####.", "#....", "#....", "#...."],
+    "G": [".####", "#....", "#....", "#.###", "#...#", "#...#", ".###."],
+    "H": ["#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
+    "I": ["###", ".#.", ".#.", ".#.", ".#.", ".#.", "###"],
+    "J": ["..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.."],
+    "K": ["#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#"],
+    "L": ["#....", "#....", "#....", "#....", "#....", "#....", "#####"],
+    "M": ["#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#"],
+    "N": ["#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#"],
+    "O": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+    "P": ["####.", "#...#", "#...#", "####.", "#....", "#....", "#...."],
+    "Q": [".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#"],
+    "R": ["####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#"],
+    "S": [".####", "#....", "#....", ".###.", "....#", "....#", "####."],
+    "T": ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."],
+    "U": ["#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+    "V": ["#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.."],
+    "W": ["#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#"],
+    "X": ["#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#"],
+    "Y": ["#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.."],
+    "Z": ["#####", "....#", "...#.", "..#..", ".#...", "#....", "#####"],
+}.items():
+    glifo(ch, l)
+
+# Minusculas (altura-x 5, hastes 7, descendentes 2)
+for ch, l, b in [
+    ("a", [".##.", "...#", ".###", "#..#", ".###"], 0),
+    ("b", ["#...", "#...", "###.", "#..#", "#..#", "#..#", "###."], 0),
+    ("c", [".###", "#...", "#...", "#...", ".###"], 0),
+    ("d", ["...#", "...#", ".###", "#..#", "#..#", "#..#", ".###"], 0),
+    ("e", [".##.", "#..#", "####", "#...", ".###"], 0),
+    ("f", [".###", ".#..", "####", ".#..", ".#..", ".#..", ".#.."], 0),
+    ("g", [".###", "#..#", "#..#", "#..#", ".###", "...#", "###."], -2),
+    ("h", ["#...", "#...", "###.", "#..#", "#..#", "#..#", "#..#"], 0),
+    ("i", ["#", ".", "#", "#", "#", "#", "#"], 0),
+    ("j", ["..#", "...", "..#", "..#", "..#", "..#", "..#", "..#", "##."], -2),
+    ("k", ["#...", "#...", "#..#", "#.#.", "##..", "#.#.", "#..#"], 0),
+    ("l", ["##.", ".#.", ".#.", ".#.", ".#.", ".#.", ".##"], 0),
+    ("m", ["##.#.", "#.#.#", "#.#.#", "#.#.#", "#.#.#"], 0),
+    ("n", ["###.", "#..#", "#..#", "#..#", "#..#"], 0),
+    ("o", [".##.", "#..#", "#..#", "#..#", ".##."], 0),
+    ("p", ["###.", "#..#", "#..#", "#..#", "###.", "#...", "#..."], -2),
+    ("q", [".###", "#..#", "#..#", "#..#", ".###", "...#", "...#"], -2),
+    ("r", ["#.##", "##..", "#...", "#...", "#..."], 0),
+    ("s", [".###", "#...", ".##.", "...#", "###."], 0),
+    ("t", [".#..", ".#..", "####", ".#..", ".#..", ".#..", ".###"], 0),
+    ("u", ["#..#", "#..#", "#..#", "#..#", ".###"], 0),
+    ("v", ["#...#", "#...#", ".#.#.", ".#.#.", "..#.."], 0),
+    ("w", ["#...#", "#...#", "#.#.#", "#.#.#", ".#.#."], 0),
+    ("x", ["#..#", "#..#", ".##.", "#..#", "#..#"], 0),
+    ("y", ["#..#", "#..#", "#..#", "#..#", ".###", "...#", "###."], -2),
+    ("z", ["####", "..#.", ".#..", "#...", "####"], 0),
+]:
+    glifo(ch, l, b)
+
+# Numeros
+for ch, l in {
+    "0": [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
+    "1": ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
+    "2": [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
+    "3": ["####.", "....#", "....#", ".###.", "....#", "....#", "####."],
+    "4": ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
+    "5": ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
+    "6": [".###.", "#....", "#....", "####.", "#...#", "#...#", ".###."],
+    "7": ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
+    "8": [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
+    "9": [".###.", "#...#", "#...#", ".####", "....#", "....#", ".###."],
+}.items():
+    glifo(ch, l)
+
+# Pontuacao
+glifo("!", ["#", "#", "#", "#", "#", ".", "#"])
+glifo("?", [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."])
+glifo(".", ["#"])
+glifo(",", [".#", "#."], -1)
+glifo(":", ["#", ".", ".", "#", "."])
+glifo(";", [".#", "..", "..", ".#", "#."], -1)
+glifo("'", ["#", "#"], 5)
+glifo('"', ["#.#", "#.#"], 5)
+glifo("-", ["###"], 3)
+glifo("+", [".#.", "###", ".#."], 2)
+glifo("=", ["###", "...", "###"], 2)
+glifo("/", ["....#", "...#.", "...#.", "..#..", ".#...", ".#...", "#...."])
+glifo("(", [".#", "#.", "#.", "#.", "#.", "#.", ".#"])
+glifo(")", ["#.", ".#", ".#", ".#", ".#", ".#", "#."])
+glifo("_", ["#####"], -1)
+glifo("*", ["#.#", ".#.", "#.#"], 3)
+glifo("<", ["..#", ".#.", "#..", ".#.", "..#"], 1)
+glifo(">", ["#..", ".#.", "..#", ".#.", "#.."], 1)
+glifo("%", ["##..#", "##.#.", "...#.", "..#..", ".#...", ".#.##", "#..##"])
+glifo("#", [".#.#.", "#####", ".#.#.", "#####", ".#.#."], 1)
+glifo("&", [".##..", "#..#.", ".##..", ".#..#", "#.##.", "#..#.", ".##.#"])
+glifo("[", ["##", "#.", "#.", "#.", "#.", "#.", "##"])
+glifo("]", ["##", ".#", ".#", ".#", ".#", ".#", "##"])
+glifo("|", ["#", "#", "#", "#", "#", "#", "#", "#", "#"], -2)
+glifo("@", [".###.", "#...#", "#.###", "#.#.#", "#.##.", "#....", ".###."])
+glifo("$", ["..#..", ".####", "#.#..", ".###.", "..#.#", "####.", "..#.."])
+glifo(" ", ["..."])
+
+# Acentos (portugues): marca de 2 linhas colocada em cima da letra
+MARCAS = {
+    "agudo": ["..#", ".#."],
+    "grave": ["#..", ".#."],
+    "circ": [".#.", "#.#"],
+    "til": [".#.#", "#.#."],
+    "trema": ["#.#", "..."],
+}
+G["ı"] = (["#", "#", "#", "#", "#"], 0)  # i sem ponto (base do í)
+
+
+def acentuar(ch, base, marca):
+    linhas, b = G[base]
+    m = MARCAS[marca]
+    wb, wm = len(linhas[0]), len(m[0])
+    w = max(wb, wm)
+    ob, om = (w - wb) // 2, (w - wm) // 2
+    topo_base = b + len(linhas) - 1  # y da linha de cima da letra
+    linhas_m = [("." * om + r + "." * w)[:w] for r in m]
+    linhas_b = [("." * ob + r + "." * w)[:w] for r in linhas]
+    G[ch] = (linhas_m + ["." * w] + linhas_b, b)
+    assert topo_base + 3 <= 10
+
+
+for ch, base, marca in [
+    ("á", "a", "agudo"), ("à", "a", "grave"), ("â", "a", "circ"), ("ã", "a", "til"), ("ä", "a", "trema"),
+    ("é", "e", "agudo"), ("ê", "e", "circ"), ("è", "e", "grave"),
+    ("í", "ı", "agudo"), ("ó", "o", "agudo"), ("ô", "o", "circ"), ("õ", "o", "til"), ("ö", "o", "trema"),
+    ("ú", "u", "agudo"), ("ü", "u", "trema"),
+    ("Á", "A", "agudo"), ("À", "A", "grave"), ("Â", "A", "circ"), ("Ã", "A", "til"),
+    ("É", "E", "agudo"), ("Ê", "E", "circ"), ("Í", "I", "agudo"),
+    ("Ó", "O", "agudo"), ("Ô", "O", "circ"), ("Õ", "O", "til"), ("Ú", "U", "agudo"),
+]:
+    acentuar(ch, base, marca)
+G["ç"] = (G["c"][0] + [".#.", "##."], -2)
+G["Ç"] = (G["C"][0] + ["..#..", ".##.."], -2)
+del G["ı"]
+
+PX = 128         # unidades de fonte por pixel
+EM = 8 * PX      # 1 em = 8 pixels -> tamanho de fonte multiplo de 8 = pixels inteiros
+ASC = 10 * PX
+DESC = -3 * PX
+
+
+def contornos_de_pixels(pixels):
+    """Transforma um conjunto de pixels (x,y com y pra cima) em contornos poligonais
+    no sentido horario (padrao TrueType), unindo pixels vizinhos."""
+    arestas = {}
+    for (x, y) in pixels:
+        for a, b in (((x, y), (x, y + 1)), ((x, y + 1), (x + 1, y + 1)),
+                     ((x + 1, y + 1), (x + 1, y)), ((x + 1, y), (x, y))):
+            if (b, a) in arestas:
+                del arestas[(b, a)]
+            else:
+                arestas[(a, b)] = True
+    saidas = {}
+    for (a, b) in arestas:
+        saidas.setdefault(a, []).append(b)
+    contornos = []
+    while saidas:
+        inicio = next(iter(saidas))
+        pts = [inicio]
+        atual = inicio
+        while True:
+            prox = saidas[atual].pop()
+            if not saidas[atual]:
+                del saidas[atual]
+            if prox == inicio:
+                break
+            pts.append(prox)
+            atual = prox
+        # remove pontos colineares
+        limpos = []
+        n = len(pts)
+        for i in range(n):
+            p0, p1, p2 = pts[i - 1], pts[i], pts[(i + 1) % n]
+            if (p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0]) != 0:
+                limpos.append(p1)
+        contornos.append(limpos)
+    return contornos
+
+
+def checksum(dados):
+    dados += b"\0" * ((4 - len(dados) % 4) % 4)
+    return sum(struct.unpack(">%dI" % (len(dados) // 4), dados)) & 0xFFFFFFFF
+
+
+def gerar_ttf(caminho, nome="PixelInferno"):
+    chars = sorted(G.keys(), key=ord)
+    glifos = [None] + chars  # 0 = .notdef
+    glyf, loca, hmtx = b"", [], b""
+    max_pts = max_cont = 0
+    xmin_g = ymin_g = 10 ** 6
+    xmax_g = ymax_g = -10 ** 6
+    larg_total = 0
+    for ch in glifos:
+        if ch is None:
+            linhas, base = ["####", "#..#", "#..#", "#..#", "#..#", "#..#", "####"], 0
+        else:
+            linhas, base = G[ch]
+        w = len(linhas[0])
+        avanco = (w + 1) * PX
+        larg_total += avanco
+        pixels = set()
+        for i, l in enumerate(linhas):
+            y = base + len(linhas) - 1 - i
+            for x, p in enumerate(l):
+                if p == "#":
+                    pixels.add((x, y))
+        loca.append(len(glyf))
+        if not pixels:
+            hmtx += struct.pack(">Hh", avanco, 0)
+            continue
+        conts = contornos_de_pixels(pixels)
+        xs = [p[0] for cc in conts for p in cc]
+        ys = [p[1] for cc in conts for p in cc]
+        bx0, by0, bx1, by1 = min(xs) * PX, min(ys) * PX, max(xs) * PX, max(ys) * PX
+        xmin_g, ymin_g = min(xmin_g, bx0), min(ymin_g, by0)
+        xmax_g, ymax_g = max(xmax_g, bx1), max(ymax_g, by1)
+        dados = struct.pack(">hhhhh", len(conts), bx0, by0, bx1, by1)
+        fim, total = [], 0
+        for cc in conts:
+            total += len(cc)
+            fim.append(total - 1)
+        max_pts, max_cont = max(max_pts, total), max(max_cont, len(conts))
+        dados += struct.pack(">%dH" % len(fim), *fim)
+        dados += struct.pack(">H", 0)  # sem instrucoes
+        dados += bytes([1] * total)    # todos os pontos "on-curve"
+        px_ant = py_ant = 0
+        dx, dy = b"", b""
+        for cc in conts:
+            for (x, y) in cc:
+                dx += struct.pack(">h", x * PX - px_ant)
+                dy += struct.pack(">h", y * PX - py_ant)
+                px_ant, py_ant = x * PX, y * PX
+        dados += dx + dy
+        dados += b"\0" * ((4 - len(dados) % 4) % 4)
+        glyf += dados
+        hmtx += struct.pack(">Hh", avanco, bx0)
+    loca.append(len(glyf))
+    n = len(glifos)
+
+    head = struct.pack(">IIIIHHqqhhhhHHhhh", 0x00010000, 0x00010000, 0, 0x5F0F3CF5, 0x000B, EM,
+                       0, 0, xmin_g, ymin_g, xmax_g, ymax_g, 0, 8, 2, 1, 0)
+    hhea = struct.pack(">IhhhHhhhhhhhhhhhH", 0x00010000, ASC, DESC, 0,
+                       max(struct.unpack(">%dH" % (n * 2), hmtx)[0::2]), 0, 0, xmax_g, 1, 0, 0,
+                       0, 0, 0, 0, 0, n)
+    maxp = struct.pack(">IHHHHHHHHHHHHHH", 0x00010000, n, max_pts, max_cont, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+    os2 = struct.pack(">HhHHH" + "h" * 10 + "h", 4, larg_total // n, 400, 5, 0,
+                      5 * PX, 5 * PX, 0, PX, 5 * PX, 5 * PX, 0, 4 * PX, PX, 3 * PX, 0)
+    os2 += bytes([2, 11, 6, 9, 0, 0, 0, 0, 0, 0])  # panose
+    os2 += struct.pack(">IIII", 0b11, 0, 0, 0)
+    os2 += b"NONE"
+    os2 += struct.pack(">HHHhhhHHIIhhHHH", 0x40, 32, max(ord(ch) for ch in chars), ASC, DESC, 0,
+                       ASC, -DESC, 1, 0, 5 * PX, 7 * PX, 0, 32, 1)
+    post = struct.pack(">IIhhIIIII", 0x00030000, 0, -PX, PX, 0, 0, 0, 0, 0)
+
+    # cmap formato 4 (um segmento por caractere)
+    segs = [(ord(ch), glifos.index(ch)) for ch in chars] + [(0xFFFF, 0)]
+    sc = len(segs)
+    busca = 2 * 2 ** int(math.log2(sc))
+    fim_c = b"".join(struct.pack(">H", s[0]) for s in segs)
+    ini_c = fim_c
+    delta = b"".join(struct.pack(">H", ((s[1] - s[0]) & 0xFFFF) if s[0] != 0xFFFF else 1) for s in segs)
+    rng = b"\0\0" * sc
+    sub = struct.pack(">HHHHHHH", 4, 0, 0, sc * 2, busca, int(math.log2(sc)), sc * 2 - busca)
+    sub += fim_c + b"\0\0" + ini_c + delta + rng
+    sub = sub[:2] + struct.pack(">H", len(sub)) + sub[4:]
+    cmap = struct.pack(">HHHHI", 0, 1, 3, 1, 12) + sub
+
+    nomes = {1: nome, 2: "Regular", 3: nome + "-Regular", 4: nome + " Regular", 6: nome + "-Regular"}
+    regs, txt = b"", b""
+    for nid, s in nomes.items():
+        b = s.encode("utf-16-be")
+        regs += struct.pack(">HHHHHH", 3, 1, 0x409, nid, len(b), len(txt))
+        txt += b
+    name = struct.pack(">HHH", 0, len(nomes), 6 + 12 * len(nomes)) + regs + txt
+
+    loca_b = struct.pack(">%dI" % len(loca), *loca)
+    tabelas = {b"OS/2": os2, b"cmap": cmap, b"glyf": glyf, b"head": head, b"hhea": hhea,
+               b"hmtx": hmtx, b"loca": loca_b, b"maxp": maxp, b"name": name, b"post": post}
+    tags = sorted(tabelas)
+    nt = len(tags)
+    es = int(math.log2(nt))
+    sr = 16 * 2 ** es
+    cab = struct.pack(">IHHHH", 0x00010000, nt, sr, es, nt * 16 - sr)
+    offset = 12 + 16 * nt
+    dirs, corpo = b"", b""
+    for t in tags:
+        d = tabelas[t]
+        dirs += struct.pack(">4sIII", t, checksum(d), offset + len(corpo), len(d))
+        corpo += d + b"\0" * ((4 - len(d) % 4) % 4)
+    fonte = bytearray(cab + dirs + corpo)
+    ajuste = (0xB1B0AFBA - checksum(bytes(fonte))) & 0xFFFFFFFF
+    pos_head = 12 + 16 * nt + sum(len(tabelas[t]) + (4 - len(tabelas[t]) % 4) % 4 for t in tags[:tags.index(b"head")])
+    fonte[pos_head + 8:pos_head + 12] = struct.pack(">I", ajuste)
+    os.makedirs(os.path.dirname(caminho), exist_ok=True)
+    with open(caminho, "wb") as f:
+        f.write(fonte)
+    print("  ok", os.path.relpath(caminho, RAIZ), f"({len(chars)} caracteres)")
+
+
+def amostra_fonte(texto, escala=3):
+    """Desenha o texto com os glifos (so para a imagem de preview)."""
+    w = sum(len(G.get(ch, G["?"])[0][0]) + 1 for ch in texto)
+    img = Image.new("RGBA", (w, 14), T)
+    x = 0
+    for ch in texto:
+        linhas, b = G.get(ch, G["?"])
+        for i, l in enumerate(linhas):
+            y = 10 - (b + len(linhas) - 1 - i)
+            for j, p in enumerate(l):
+                if p == "#":
+                    img.putpixel((x + j, y), PAL["creme"])
+        x += len(linhas[0]) + 1
+    return img.resize((w * escala, 14 * escala), Image.NEAREST)
+
+
+# ---------------------------------------------------------------------------
+def main():
+    print("Gerando pixel art em", ART)
+    imgs = {}
+    imgs["agenor"] = salvar(agenor(), "Sprites", "Personagens", "agenor.png")
+    for q in (0, 1):
+        imgs[f"demonio{q}"] = salvar(demonio(q), "Sprites", "Inimigos", f"demonio_coracao_{q}.png")
+    imgs["espinho"] = salvar(espinho(), "Sprites", "Cenario", "espinho.png")
+    est = estalagmite()
+    imgs["estalagmite"] = est
+    # objeto com escala 1.75 x 10.23 -> pixels esticados 6x na horizontal
+    salvar(esticar_linhas(est, 6, 1), "Sprites", "Cenario", "estalagmite.png")
+    imgs["tile"] = salvar(tile_rocha(), "Sprites", "Cenario", "tile_rocha.png")
+    imgs["plataforma"] = salvar(plataforma_dissolvivel(), "Sprites", "Cenario", "plataforma_dissolvivel.png")
+    for q in range(4):
+        imgs[f"trofeu{q}"] = salvar(trofeu(q), "Sprites", "Objetos", f"trofeu_{q}.png")
+    fundo = fundo_inferno(757, 398)
+    # o objeto do fundo tem escala 12.79 x 12.32: as linhas sao levemente esticadas
+    salvar(fundo.resize((757, 413), Image.NEAREST), "Sprites", "Cenario", "fundo_inferno.png")
+    imgs["menu"] = salvar(fundo_menu(), "Sprites", "UI", "fundo_menu.png")
+    imgs["botao"] = salvar(botao(), "Sprites", "UI", "botao.png")
+    imgs["painel"] = salvar(painel(), "Sprites", "UI", "painel.png")
+    gerar_ttf(os.path.join(ART, "Fontes", "PixelInferno.ttf"))
+
+    # folha de preview para a documentacao
+    os.makedirs(DOCS, exist_ok=True)
+    folha = Image.new("RGBA", (1200, 760), PAL["noite"])
+    x, y = 10, 10
+    for nome in ["agenor", "demonio0", "demonio1", "espinho", "tile", "trofeu0", "trofeu2", "botao", "painel"]:
+        im = imgs[nome]
+        esc = 6
+        big = im.resize((im.width * esc, im.height * esc), Image.NEAREST)
+        if x + big.width > 1190:
+            x, y = 10, y + 230
+        folha.alpha_composite(big, (x, y))
+        x += big.width + 16
+    est_p = imgs["estalagmite"].resize((38 * 2, 142 * 2), Image.NEAREST)
+    folha.alpha_composite(est_p, (1110, 10))
+    plat = Image.open(os.path.join(ART, "Sprites", "Cenario", "plataforma_dissolvivel.png")).resize((200, 16), Image.NEAREST)
+    folha.alpha_composite(plat.resize((800, 64), Image.NEAREST), (10, 480))
+    folha.alpha_composite(amostra_fonte("7 Hell's - Você Venceu! Pausado ÁÉÍÓÚ ãõç 0123456789"), (10, 560))
+    folha.alpha_composite(fundo.resize((378, 199), Image.NEAREST), (10, 610 - 50 + 40))
+    folha.alpha_composite(imgs["menu"].resize((240, 135), Image.NEAREST), (400, 600))
+    folha.save(os.path.join(DOCS, "pixelart_preview.png"))
+    print("  ok Docs/pixelart_preview.png")
+
+
+if __name__ == "__main__":
+    main()
