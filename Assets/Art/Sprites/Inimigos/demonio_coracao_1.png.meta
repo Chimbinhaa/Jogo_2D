@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      demonio_coracao_1_0: -3277984814649056870
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      agenor_andando_3_0: -3514492924100592774
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

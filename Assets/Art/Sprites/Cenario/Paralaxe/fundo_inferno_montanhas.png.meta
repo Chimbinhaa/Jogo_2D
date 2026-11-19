@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      fundo_inferno_montanhas_0: 1553796749477360442
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

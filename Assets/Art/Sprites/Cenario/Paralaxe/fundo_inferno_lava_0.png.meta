@@ -184,7 +184,10 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      fundo_inferno_lava_0_0: 5426004722704483624
+      fundo_inferno_lava_0_1: -1403220878903704259
+      fundo_inferno_lava_0_2: -2819810841528806537
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

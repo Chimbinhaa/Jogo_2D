@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      agenor_parado_0_0: -1045616380006192039
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
